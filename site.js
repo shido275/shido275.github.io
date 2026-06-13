@@ -42,7 +42,7 @@ let isAutoplayRandom = false;
 
 document.addEventListener("DOMContentLoaded", () => {
     const year = document.querySelector("#year");
-    if (year) year.textContent = new Date("year").getFullYear();
+    if (year) year.textContent = new Date().getFullYear();
 
     initInfoModal();
     loadMusicLibrary();
@@ -627,6 +627,14 @@ function loadLiveSection() {
     }
 }
 
+function getProjectKey(track) {
+    if (!track) return "";
+    if (track.category === "Singles") {
+        return `Singles-${track.path}-${track.title}`;
+    }
+    return `${track.category}-${releaseNameFromPath(track)}`;
+}
+
 function playTrackFromQueue(index) {
     if (index < 0 || index >= currentTracksInView.length) return;
 
@@ -703,10 +711,10 @@ function playNextTrack() {
         return;
     }
 
-    if (currentPlayingTrack) {
-        const isSingle = currentPlayingTrack.category === "Singles";
-        const albumTracks = playbackQueue.filter(t => t.album === currentPlayingTrack.album && t.category === currentPlayingTrack.category);
-        const isFinalSong = isSingle || currentPlayingTrack === albumTracks[albumTracks.length - 1];
+    if (currentPlayingTrack && !isShuffle) {
+        const currentProjectKey = getProjectKey(currentPlayingTrack);
+        const projectTracks = playbackQueue.filter(t => getProjectKey(t) === currentProjectKey);
+        const isFinalSong = projectTracks.length === 0 || currentPlayingTrack.path === projectTracks[projectTracks.length - 1].path;
 
         if (isFinalSong && repeatMode !== "all") {
             isAutoplayRandom = true;
@@ -742,23 +750,15 @@ function playPrevTrack() {
         return;
     }
 
-    if (playbackHistory.length > 0) {
-        const prevTrack = playbackHistory.pop();
-        isAutoplayRandom = false;
-
-        const queueIdx = playbackQueue.indexOf(prevTrack);
-        if (queueIdx !== -1) {
-            currentQueueIndex = queueIdx;
-            if (isShuffle) {
-                const shufIdx = shuffleQueue.indexOf(queueIdx);
-                if (shufIdx !== -1) {
-                    currentQueueIndex = shufIdx;
-                }
-            }
+    if (isAutoplayRandom) {
+        if (playbackHistory.length > 0) {
+            const prevTrack = playbackHistory.pop();
+            currentPlayingTrack = prevTrack;
+            setPlayerTrack(prevTrack);
+        } else {
+            audio.currentTime = 0;
+            audio.play().catch(() => {});
         }
-
-        currentPlayingTrack = prevTrack;
-        setPlayerTrack(prevTrack);
         return;
     }
 
