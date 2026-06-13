@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>X/i\D | Homebase</title>
+    <meta name="description" content="The official homebase for X/i\D">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <header class="site-header">
+        <a class="brand" href="index.html" aria-label="X/i\D home">X/i\D</a>
+        <nav class="site-nav" aria-label="Primary navigation">
+            <a href="#top">Home</a>
+            <a href="link.html">All Links</a>
+            <a href="epk.html">EPK</a>
+            <a href="#music">Music</a>
+            <a href="beatstore.html">Beats</a>
+            <a href="portfolio.html">Portfolio</a>
+            <a href="#submissions">Submissions</a>
+            <a href="#live">Live</a>
+            <a href="#contact">Contact</a>
+        </nav>
+    </header>
+
+    <main>
+        <section class="hero section-band" id="top">
+            <div class="hero-copy">
+                <p class="eyebrow">FAKE Entertainment presents</p>
+                <h1>X/i\D</h1>
+                <p class="lead">X/i\D is a multi-instrumentalist, producer, and artist blending rap, singing, and
+                    songwriting into a singular sound. With releases ranging from 2021's Curse to the 2026 single
+                    4LLR1Z3, their music navigates an evolving creative landscape, focusing on raw expression and
+                    versatile production.</p>
+                <div class="hero-actions">
+                    <a class="button primary" href="#music">Play Music</a>
+                    <a class="button" href="beatstore.html">Browse Beats</a>
+                </div>
+            </div>
+            <div class="hero-panel" aria-label="Featured player">
+                <p class="panel-label">Now available</p>
+                <h2>Latest Drop</h2>
+                <audio controls controlsList="nodownload" oncontextmenu="return false;" preload="metadata" id="featured-player"></audio>
+                <p class="muted" id="featured-title">Upload music to your repo folders to populate the player.</p>
+            </div>
+        </section>
+
+
+        <section class="section-band" id="music">
+            <div class="section-heading">
+                <p class="eyebrow">Catalog</p>
+                <h2>Music Player</h2>
+                <p>Listen to X/i\D's music here first before it hits DSPs and retail stores.</p>
+            </div>
+            <div class="tabs" id="music-tabs" role="tablist" aria-label="Music categories"></div>
+            <div class="music-search-container">
+                <input type="text" id="music-search" placeholder="Search track, artist, or album..."
+                    aria-label="Search music catalog">
+            </div>
+            <div class="music-layout">
+                <div class="release-grid" id="music-library" aria-live="polite"></div>
+                <aside class="player-dock" aria-label="Music player">
+                    <img id="player-art" src="" alt="" hidden>
+                    <p class="panel-label">Selected track</p>
+                    <h3 id="player-title">No track selected</h3>
+                    <p class="muted" id="player-meta">Choose a song from the library.</p>
+                    <audio id="main-audio" controls controlsList="nodownload" oncontextmenu="return false;" preload="metadata"></audio>
+                    <div class="player-controls">
+                        <button id="player-shuffle" class="control-btn" title="Shuffle (Off)" type="button">SHUF</button>
+                        <button id="player-prev" class="control-btn" title="Previous Track" type="button">⏮</button>
+                        <button id="player-next" class="control-btn" title="Next Track" type="button">⏭</button>
+                        <button id="player-repeat" class="control-btn" title="Repeat (Off)" type="button">REP</button>
+                    </div>
+                </aside>
+            </div>
+        </section>
+
+        <section class="section-band" id="beat-preview">
+            <div class="section-heading">
+                <p class="eyebrow">Licenses</p>
+                <h2>Beat Store</h2>
+                <p>Upload MP3, WAV, M4A, or FLAC files to <code>Beats</code>. Add optional JSON metadata next to each
+                    beat for pricing and payment links.</p>
+            </div>
+            <div class="beat-grid" id="beats-preview" aria-live="polite"></div>
+            <a class="button primary" href="beatstore.html">Open Full Beat Store</a>
+        </section>
+
+        <section class="section-band" id="submissions">
+            <div class="section-heading">
+                <p class="eyebrow">Collaborate</p>1
+                <h2>Submissions</h2>
+                <p>GitHub Pages cannot save visitor uploads directly into your repo. Connect this form to Formspree,
+                    Netlify Forms, Tally, or a custom serverless function, then review files before adding them to
+                    <code>submissions</code>.
+                </p>
+            </div>
+            <form class="submission-form" action="https://formspree.io/f/YOUR_FORM_ID" method="POST"
+                enctype="multipart/form-data">
+                <label>Name<input name="name" autocomplete="name" required></label>
+                <label>Email<input name="email" type="email" autocomplete="email" required></label>
+                <label>Project type
+                    <select name="project_type">
+                        <option>Feature verse</option>
+                        <option>Beat submission</option>
+                        <option>Mix/master request</option>
+                        <option>Visual portfolio inquiry</option>
+                    </select>
+                </label>
+                <label>Message<textarea name="message" rows="5" required></textarea></label>
+                <label>File upload<input name="upload" type="file"
+                        accept=".mp3,.wav,.m4a,.flac,.zip,.jpg,.png,.pdf"></label>
+                <button class="button primary" type="submit">Send Submission</button>
+            </form>
+        </section>
+
+        <section class="section-band" id="live">
+            <div class="section-heading">
+                <p class="eyebrow">Broadcasts</p>
+                <h2>Live Stream</h2>
+                <p>Browsers cannot play RTMP directly. Use your RTMP URL and stream key inside a platform like YouTube
+                    Live, Twitch, Mux, or Cloudflare Stream, then paste the watch and chat embeds into
+                    <code>site.js</code>.
+                </p>
+            </div>
+            <div class="live-grid">
+                <div class="embed-shell" id="live-player">Live player embed goes here.</div>
+                <div class="embed-shell chat" id="live-chat">Chat embed goes here.</div>
+            </div>
+            <h3>VOD Archives</h3>
+            <div class="vod-grid" id="vod-archives"></div>
+        </section>
+
+        <section class="section-band" id="contact">
+            <div class="section-heading">
+                <p class="eyebrow">Booking and business</p>
+                <h2>Contact Me</h2>
+            </div>
+            <div class="contact-grid">
+                <a class="contact-card" href="mailto:shidomusic275@gmail.com">shidomusic275@gmail.com</a>
+                <figure class="qr-card">
+                    <img src="assets/qr-music.svg" alt="QR code for music links">
+                    <figcaption>Music links</figcaption>
+                </figure>
+                <figure class="qr-card">
+                    <img src="assets/qr-contact.svg" alt="QR code for contact links">
+                    <figcaption>Contact links</figcaption>
+                </figure>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; <span id="year"></span> X/i\D | FAKE Entertainment. All rights reserved.</p>
+    </footer>
+
+    <script src="site.js"></script>
+</body>
+
+</html>

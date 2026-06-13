@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 900" role="img" aria-label="Press photo placeholder 3">
+  <rect width="900" height="900" fill="#101419"/>
+  <circle cx="260" cy="260" r="150" fill="#8fcb9b" opacity=".7"/>
+  <circle cx="600" cy="400" r="220" fill="#49d7df" opacity=".34"/>
+  <circle cx="450" cy="520" r="170" fill="#f0b85b" opacity=".55"/>
+  <text x="450" y="790" text-anchor="middle" font-family="Arial, sans-serif" font-size="54" font-weight="800" fill="#f4f0e8">PROMO ASSET</text>
+</svg>

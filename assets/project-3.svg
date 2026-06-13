@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 900" role="img" aria-label="Project artwork placeholder 3">
+  <rect width="900" height="900" fill="#07080a"/>
+  <circle cx="450" cy="450" r="285" fill="#df6f8b" opacity=".74"/>
+  <circle cx="450" cy="450" r="160" fill="#07080a"/>
+  <text x="450" y="785" text-anchor="middle" font-family="Arial, sans-serif" font-size="74" font-weight="800" fill="#f4f0e8">PROJECT 03</text>
+</svg>

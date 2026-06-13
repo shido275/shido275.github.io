@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 900" role="img" aria-label="Project artwork placeholder 1">
+  <rect width="900" height="900" fill="#0b0f13"/>
+  <rect x="115" y="115" width="670" height="670" fill="#171c22" stroke="#f0b85b" stroke-width="12"/>
+  <text x="450" y="470" text-anchor="middle" font-family="Arial, sans-serif" font-size="74" font-weight="800" fill="#f4f0e8">PROJECT 01</text>
+</svg>

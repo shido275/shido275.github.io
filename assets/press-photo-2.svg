@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 900" role="img" aria-label="Press photo placeholder 2">
+  <rect width="900" height="900" fill="#07080a"/>
+  <rect x="130" y="130" width="640" height="640" fill="#171c22" stroke="#49d7df" stroke-width="10"/>
+  <path d="M190 610 L370 390 L510 540 L620 430 L720 610 Z" fill="#df6f8b" opacity=".78"/>
+  <text x="450" y="785" text-anchor="middle" font-family="Arial, sans-serif" font-size="56" font-weight="800" fill="#f4f0e8">ARTIST IMAGE</text>
+</svg>

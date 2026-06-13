@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 900" role="img" aria-label="Press photo placeholder 1">
+  <rect width="900" height="900" fill="#11151a"/>
+  <path d="M0 650 C180 560 310 720 470 610 C640 490 760 570 900 450 L900 900 L0 900 Z" fill="#49d7df" opacity=".45"/>
+  <circle cx="450" cy="340" r="150" fill="#f0b85b" opacity=".82"/>
+  <text x="450" y="790" text-anchor="middle" font-family="Arial, sans-serif" font-size="58" font-weight="800" fill="#f4f0e8">PRESS PHOTO</text>
+</svg>

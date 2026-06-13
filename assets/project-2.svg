@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 900" role="img" aria-label="Project artwork placeholder 2">
+  <rect width="900" height="900" fill="#101419"/>
+  <path d="M120 700 L300 180 L450 700 L600 180 L780 700 Z" fill="#49d7df" opacity=".72"/>
+  <text x="450" y="790" text-anchor="middle" font-family="Arial, sans-serif" font-size="74" font-weight="800" fill="#f4f0e8">PROJECT 02</text>
+</svg>

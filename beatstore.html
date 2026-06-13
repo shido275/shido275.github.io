@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>X/i\D | Beat Store</title>
+    <meta name="description" content="Browse and license beats from X/i\D.">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header class="site-header">
+        <a class="brand" href="index.html" aria-label="X/i\D home">X/i\D</a>
+        <nav class="site-nav" aria-label="Primary navigation">
+            <a href="index.html#top">Home</a>
+            <a href="link.html">All Links</a>
+            <a href="epk.html">EPK</a>
+            <a href="index.html#music">Music</a>
+            <a href="beatstore.html" aria-current="page">Beats</a>
+            <a href="portfolio.html">Portfolio</a>
+            <a href="index.html#submissions">Submissions</a>
+            <a href="index.html#live">Live</a>
+            <a href="index.html#contact">Contact</a>
+        </nav>
+    </header>
+
+    <main>
+        <section class="hero compact section-band">
+            <div class="hero-copy">
+                <p class="eyebrow">Beat store</p>
+                <h1>License Beats</h1>
+                <p class="lead">Upload beats to the <code>Beats</code> folder and they will appear here automatically after the repo is published.</p>
+            </div>
+            <div class="hero-panel">
+                <p class="panel-label">Payment setup</p>
+                <p>Static checkout needs an external payment link. Add PayPal, Stripe Payment Link, BeatStars, Airbit, Gumroad, or Ko-fi URLs in each beat metadata JSON file.</p>
+            </div>
+        </section>
+
+        <section class="section-band">
+            <div class="section-heading">
+                <p class="eyebrow">Inventory</p>
+                <h2>Available Beats</h2>
+            </div>
+            <div class="beat-grid" id="beat-store" aria-live="polite"></div>
+        </section>
+
+        <section class="section-band">
+            <div class="section-heading">
+                <p class="eyebrow">Metadata example</p>
+                <h2>How to add prices</h2>
+            </div>
+            <pre><code>{
+  "title": "Midnight Signal",
+  "producer": "X/i\\D",
+  "bpm": 142,
+  "key": "F minor",
+  "price": "$49",
+  "license": "Non-exclusive MP3/WAV",
+  "paymentUrl": "https://paypal.me/YOURNAME/49",
+  "cover": "cover.jpg"
+}</code></pre>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; <span id="year"></span> X/i\D | FAKE Entertainment. All rights reserved.</p>
+    </footer>
+    <script src="site.js"></script>
+</body>
+</html>
+
+

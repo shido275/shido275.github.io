@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 900" role="img" aria-label="X/iD profile placeholder">
+  <rect width="900" height="900" fill="#07080a"/>
+  <circle cx="450" cy="330" r="170" fill="#49d7df" opacity=".76"/>
+  <path d="M190 810c28-180 172-285 450-285 92 0 155 16 190 48v237z" fill="#df6f8b" opacity=".72"/>
+  <text x="450" y="470" text-anchor="middle" font-family="Arial, sans-serif" font-size="120" font-weight="900" fill="#f4f0e8">X/i\D</text>
+</svg>
