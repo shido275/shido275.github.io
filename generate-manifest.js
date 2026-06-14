@@ -47,12 +47,12 @@ function scanMusic() {
 
             for (const audio of audioFiles) {
                 const audioBase = path.basename(audio, path.extname(audio));
-                
+
                 // Look for matching json or fallback metadata.json
                 let metadata = {};
                 const specificJson = `${audioBase}.json`;
                 const genericJson = 'metadata.json';
-                
+
                 let jsonFile = null;
                 if (files.includes(specificJson)) {
                     jsonFile = specificJson;
@@ -75,7 +75,7 @@ function scanMusic() {
                     const candidate = files.find(f => f.toLowerCase() === metadata.cover.toLowerCase());
                     if (candidate) coverFile = candidate;
                 }
-                
+
                 if (!coverFile) {
                     // Try to find image with matching basename
                     coverFile = imageFiles.find(f => path.basename(f, path.extname(f)).toLowerCase() === audioBase.toLowerCase());
@@ -115,4 +115,93 @@ function scanMusic() {
     console.log(`Generated manifest at ${MANIFEST_PATH} with ${tracks.length} tracks.`);
 }
 
+const BEATS_DIR = path.join(__dirname, 'Beats');
+const BEATS_MANIFEST_PATH = path.join(__dirname, 'beats-manifest.json');
+
+function getFilesRecursive(dir) {
+    let results = [];
+    if (!fs.existsSync(dir)) return results;
+    const list = fs.readdirSync(dir);
+    list.forEach(file => {
+        const filePath = path.join(dir, file);
+        const stat = fs.statSync(filePath);
+        if (stat && stat.isDirectory()) {
+            results = results.concat(getFilesRecursive(filePath));
+        } else {
+            results.push(filePath);
+        }
+    });
+    return results;
+}
+
+function scanBeats() {
+    const beats = [];
+
+    if (!fs.existsSync(BEATS_DIR)) {
+        console.log('Beats directory does not exist, skipping beats manifest.');
+        return;
+    }
+
+    const allFiles = getFilesRecursive(BEATS_DIR);
+    const audioFiles = allFiles.filter(f => AUDIO_EXTENSIONS.includes(path.extname(f).toLowerCase()));
+
+    for (const audioPath of audioFiles) {
+        const audioDir = path.dirname(audioPath);
+        const audioFile = path.basename(audioPath);
+        const audioBase = path.basename(audioFile, path.extname(audioFile));
+
+        const siblingFiles = fs.readdirSync(audioDir);
+
+        let metadata = {};
+        const jsonFile = `${audioBase}.json`;
+
+        if (siblingFiles.includes(jsonFile)) {
+            try {
+                const jsonContent = fs.readFileSync(path.join(audioDir, jsonFile), 'utf8');
+                metadata = JSON.parse(jsonContent);
+            } catch (e) {
+                console.warn(`Error parsing JSON for beat ${audioFile}:`, e.message);
+            }
+        }
+
+        const imageExtensions = ['.jpg', '.jpeg', '.png', '.webp'];
+        const imageFiles = siblingFiles.filter(f => imageExtensions.includes(path.extname(f).toLowerCase()));
+
+        let coverFile = null;
+        if (metadata.cover) {
+            const candidate = siblingFiles.find(f => f.toLowerCase() === metadata.cover.toLowerCase());
+            if (candidate) coverFile = candidate;
+        }
+        if (!coverFile) {
+            coverFile = imageFiles.find(f => path.basename(f, path.extname(f)).toLowerCase() === audioBase.toLowerCase());
+        }
+        if (!coverFile) {
+            coverFile = imageFiles.find(f => f.toLowerCase().includes('cover'));
+        }
+        if (!coverFile) {
+            coverFile = imageFiles[0] || null;
+        }
+
+        const relAudioPath = path.relative(__dirname, audioPath).replace(/\\/g, '/');
+        const relCoverPath = coverFile ? path.relative(__dirname, path.join(audioDir, coverFile)).replace(/\\/g, '/') : '';
+
+        beats.push({
+            title: metadata.title || prettyName(audioFile),
+            artist: metadata.artist || metadata.producer || 'X/i\\D',
+            bpm: metadata.bpm || '',
+            key: metadata.key || '',
+            price: metadata.price || '',
+            license: metadata.license || '',
+            paymentUrl: metadata.paymentUrl || '',
+            coverUrl: relCoverPath,
+            audioUrl: relAudioPath,
+            path: relAudioPath
+        });
+    }
+
+    fs.writeFileSync(BEATS_MANIFEST_PATH, JSON.stringify(beats, null, 2), 'utf8');
+    console.log(`Generated beats manifest at ${BEATS_MANIFEST_PATH} with ${beats.length} beats.`);
+}
+
 scanMusic();
+scanBeats();

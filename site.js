@@ -567,28 +567,83 @@ function setPlayerTrack(track) {
     }
 }
 
+async function loadBeatsManifest() {
+    try {
+        const response = await fetch(`beats-manifest.json?v=${Date.now()}`);
+        if (!response.ok) return [];
+        const beats = await response.json();
+        return beats.map(beat => ({
+            ...beat,
+            audioUrl: encodeURI(beat.audioUrl),
+            coverUrl: beat.coverUrl ? encodeURI(beat.coverUrl) : ""
+        }));
+    } catch {
+        return [];
+    }
+}
+
 async function loadBeatStore() {
     const containers = [document.querySelector("#beat-store"), document.querySelector("#beats-preview")].filter(Boolean);
     if (!containers.length) return;
 
+    const isLocalPreview = ["", "localhost", "127.0.0.1"].includes(window.location.hostname);
     containers.forEach(container => {
-        container.innerHTML = "<p class=\"muted\">Loading beats from GitHub...</p>";
+        container.innerHTML = `<p class="muted">Loading beats from ${isLocalPreview ? "local manifest" : "GitHub"}...</p>`;
     });
 
-    let files = [];
-    try {
-        files = await listFilesRecursive("Beats");
-    } catch {
-        files = [];
-    }
+    let beats = [];
+    if (isLocalPreview) {
+        beats = await loadBeatsManifest();
+    } else {
+        let files = [];
+        try {
+            files = await listFilesRecursive("Beats");
+        } catch {
+            files = [];
+        }
 
-    const audioFiles = files.filter(file => hasExtension(file, AUDIO_EXTENSIONS));
-    const beats = await Promise.all(audioFiles.map(file => metadataFor(file, files)));
+        const audioFiles = files.filter(file => hasExtension(file, AUDIO_EXTENSIONS));
+        beats = await Promise.all(audioFiles.map(file => metadataFor(file, files)));
+
+        if (!beats.length) {
+            beats = await loadBeatsManifest();
+        }
+    }
 
     containers.forEach(container => {
         const list = container.id === "beats-preview" ? beats.slice(0, 4) : beats;
         renderBeats(list, container);
     });
+}
+
+function openBeatInfoModal(beat) {
+    const overlay = document.querySelector("#info-modal-overlay");
+    const loading = document.querySelector("#modal-loading");
+    const modalBody = document.querySelector("#modal-body");
+    const modalTitle = document.querySelector("#modal-project-title");
+    const modalMeta = document.querySelector("#modal-project-meta");
+
+    if (!overlay || !loading || !modalBody) return;
+
+    modalTitle.textContent = beat.title;
+    modalMeta.textContent = `${beat.artist} / Beat`;
+
+    loading.style.display = "none";
+    modalBody.style.display = "block";
+
+    document.querySelector("#modal-description").textContent = `Beat details and licensing information.`;
+    document.querySelector("#modal-date").textContent = "N/A";
+    document.querySelector("#modal-performers").textContent = beat.artist || "N/A";
+    document.querySelector("#modal-producers").textContent = beat.artist || "N/A";
+    document.querySelector("#modal-writers").textContent = "N/A";
+    document.querySelector("#modal-label-credit").textContent = [
+        beat.bpm && `${beat.bpm} BPM`,
+        beat.key && `Key: ${beat.key}`,
+        beat.license && `License: ${beat.license}`,
+        beat.price && `Price: ${beat.price}`
+    ].filter(Boolean).join(" | ");
+
+    overlay.hidden = false;
 }
 
 function renderBeats(beats, container) {
@@ -597,17 +652,30 @@ function renderBeats(beats, container) {
         return;
     }
 
-    container.innerHTML = beats.map(beat => `
+    container.innerHTML = beats.map((beat, index) => `
         <article class="beat-card">
             ${beat.coverUrl ? `<img src="${beat.coverUrl}" alt="${beat.title} cover art">` : ""}
             <div class="card-body">
                 <h3>${beat.title}</h3>
                 <p class="card-meta">${[beat.bpm && `${beat.bpm} BPM`, beat.key, beat.license].filter(Boolean).join(" / ") || "License details coming soon"}</p>
                 <audio controls controlsList="nodownload" oncontextmenu="return false;" preload="metadata" src="${beat.audioUrl}"></audio>
-                <a class="button primary" href="${beat.paymentUrl || `mailto:${SITE_CONFIG.contactEmail}?subject=Beat license: ${encodeURIComponent(beat.title)}`}">${beat.price ? `Buy ${beat.price}` : "Request License"}</a>
+                <div class="card-actions" style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.75rem;">
+                    <a class="button primary" href="${beat.paymentUrl || `mailto:${SITE_CONFIG.contactEmail}?subject=Beat license: ${encodeURIComponent(beat.title)}`}">${beat.price ? `Buy ${beat.price}` : "Request License"}</a>
+                    <div style="display: flex; gap: 0.5rem; width: 100%;">
+                        <a class="button" href="${beat.audioUrl}" download style="flex: 1; min-height: 2.2rem; padding: 0.2rem 0.5rem; font-size: 0.85rem; display: inline-flex; align-items: center; justify-content: center;">Download</a>
+                        <button class="button beat-info-btn" type="button" data-beat-index="${index}" style="flex: 1; min-height: 2.2rem; padding: 0.2rem 0.5rem; font-size: 0.85rem; display: inline-flex; align-items: center; justify-content: center;">Info</button>
+                    </div>
+                </div>
             </div>
         </article>
     `).join("");
+
+    container.querySelectorAll(".beat-info-btn").forEach(button => {
+        button.addEventListener("click", () => {
+            const index = Number(button.dataset.beatIndex);
+            openBeatInfoModal(beats[index]);
+        });
+    });
 }
 
 function loadLiveSection() {

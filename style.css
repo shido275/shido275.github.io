@@ -926,6 +926,28 @@ footer {
     align-content: start;
 }
 
+#beat-store {
+    grid-template-columns: repeat(4, minmax(130px, 1fr));
+    max-height: 960px;
+    overflow-y: auto;
+    padding-right: 0.35rem;
+    align-content: start;
+}
+
+@media (max-width: 820px) {
+    #beat-store {
+        grid-template-columns: repeat(3, minmax(130px, 1fr));
+    }
+}
+
+@media (max-width: 560px) {
+    #beat-store {
+        grid-template-columns: repeat(2, minmax(120px, 1fr));
+        max-height: 60vh;
+        padding-right: 0;
+    }
+}
+
 .music-folder {
     grid-column: 1 / -1;
     overflow: hidden;
