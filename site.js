@@ -1,6 +1,6 @@
 const SITE_CONFIG = {
-    owner: "PolynesianPvnk",
-    repo: "shido.github.io",
+    owner: "shido275",
+    repo: "shido275.github.io",
     branch: "main",
     contactEmail: "shidomusic275@gmail.com",
     live: {
