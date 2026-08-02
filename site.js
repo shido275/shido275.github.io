@@ -26,10 +26,8 @@ const MUSIC_FOLDERS = [
     { label: "Compilations", path: "Music/Compilations" }
 ];
 
+// Audio State
 let allMusicTracks = [];
-let currentMusicCategory = "All";
-let currentMusicSearch = "";
-
 let playbackQueue = [];
 let currentQueueIndex = -1;
 let shuffleQueue = [];
@@ -40,126 +38,702 @@ let currentPlayingTrack = null;
 let playbackHistory = [];
 let isAutoplayRandom = false;
 
+// Audio Context Web Audio State
+let audioContext = null;
+let analyserNode = null;
+let dataArray = null;
+let sourceNode = null;
+let isAudioContextInitialized = false;
+let isMuted = false;
+let currentVolume = 0.7;
+
+// DOM Elements cache
+let audioEl = null;
+
 document.addEventListener("DOMContentLoaded", () => {
+    audioEl = document.querySelector("#main-audio");
+    
+    // Set Year in Footer
     const year = document.querySelector("#year");
     if (year) year.textContent = new Date().getFullYear();
 
+    // Initialize systems
+    initSPA();
+    initMobileNav();
+    initGlobalPlayerControls();
     initInfoModal();
+    initAudioSystemOverlay();
+
+    // Load data
     loadMusicLibrary();
     loadBeatStore();
     loadLiveSection();
-
-    const audio = document.querySelector("#main-audio");
-    if (audio) {
-        audio.addEventListener("ended", playNextTrack);
-    }
-    initPlayerControls();
 });
 
-function initInfoModal() {
-    if (document.querySelector("#info-modal-overlay")) return;
-    const modalHtml = `
-        <div id="info-modal-overlay" class="info-modal-overlay" hidden>
-            <div class="info-modal">
-                <button id="info-modal-close" class="info-modal-close" type="button">&times;</button>
-                <div class="info-modal-content">
-                    <h2 id="modal-project-title">Release Title</h2>
-                    <p class="modal-project-meta" id="modal-project-meta">Artist / Category</p>
-                    <div id="modal-loading" class="muted">Loading database...</div>
-                    <div id="modal-body" style="display: none;">
-                        <p class="modal-description" id="modal-description"></p>
-                        <div class="modal-specs">
-                            <div><strong>Release Date:</strong> <span id="modal-date"></span></div>
-                            <div><strong>Performers:</strong> <span id="modal-performers"></span></div>
-                            <div><strong>Producers:</strong> <span id="modal-producers"></span></div>
-                            <div><strong>Writers:</strong> <span id="modal-writers"></span></div>
-                        </div>
-                        <p class="modal-label-credit" id="modal-label-credit"></p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-    document.body.insertAdjacentHTML("beforeend", modalHtml);
+// ==============================================
+// SINGLE PAGE APPLICATION ROUTER (SPA)
+// ==============================================
+function initSPA() {
+    window.addEventListener("hashchange", routePage);
+    routePage(); // trigger initial routing
+}
 
-    const overlay = document.querySelector("#info-modal-overlay");
-    const closeBtn = document.querySelector("#info-modal-close");
+function routePage() {
+    const rawHash = window.location.hash || "#/home";
+    const parts = rawHash.split("#"); // split hash routing and anchor scrolling
+    
+    // Main routing path, e.g. "#/home"
+    let route = parts[1] || "/home";
+    if (route.startsWith("/")) {
+        route = route.slice(1);
+    }
+    
+    // Scroll target if present, e.g. "music" in "#/home#music"
+    const scrollTarget = parts[2] || null;
 
-    closeBtn.addEventListener("click", () => {
-        overlay.hidden = true;
-    });
+    // View mappings
+    const views = {
+        "home": "view-home",
+        "links": "view-links",
+        "epk": "view-epk",
+        "beats": "view-beats",
+        "portfolio": "view-portfolio"
+    };
 
-    overlay.addEventListener("click", (event) => {
-        if (event.target === overlay) {
-            overlay.hidden = true;
+    const targetViewId = views[route] || "view-home";
+
+    // Toggle view visibility
+    document.querySelectorAll(".view-section").forEach(view => {
+        if (view.id === targetViewId) {
+            view.classList.add("active");
+        } else {
+            view.classList.remove("active");
         }
     });
-}
 
-function getInfoJsonUrl(track) {
-    const lastSlash = track.path.lastIndexOf("/");
-    const folderPath = track.path.substring(0, lastSlash);
-    const infoPath = `${folderPath}/info.json`;
-    const isLocalPreview = ["", "localhost", "127.0.0.1"].includes(window.location.hostname);
-    if (isLocalPreview) {
-        return infoPath;
+    // Update nav link active state
+    document.querySelectorAll(".site-nav a").forEach(link => {
+        if (link.dataset.route === route) {
+            link.classList.add("active");
+            link.setAttribute("aria-current", "page");
+        } else {
+            link.classList.remove("active");
+            link.removeAttribute("aria-current");
+        }
+    });
+
+    // Handle smooth scrolling to internal anchors if specified
+    if (scrollTarget) {
+        setTimeout(() => {
+            const targetEl = document.getElementById(scrollTarget);
+            if (targetEl) {
+                targetEl.scrollIntoView({ behavior: "smooth" });
+            }
+        }, 150);
     } else {
-        return `https://raw.githubusercontent.com/${SITE_CONFIG.owner}/${SITE_CONFIG.repo}/${SITE_CONFIG.branch}/${infoPath}`;
+        window.scrollTo({ top: 0, behavior: "smooth" });
     }
 }
 
-async function openInfoModal(track) {
-    const overlay = document.querySelector("#info-modal-overlay");
-    const loading = document.querySelector("#modal-loading");
-    const modalBody = document.querySelector("#modal-body");
-    const modalTitle = document.querySelector("#modal-project-title");
-    const modalMeta = document.querySelector("#modal-project-meta");
+// ==============================================
+// MOBILE NAVIGATION HAMBURGER MENU
+// ==============================================
+function initMobileNav() {
+    const toggle = document.querySelector(".nav-mobile-toggle");
+    const nav = document.querySelector(".site-nav");
 
-    if (!overlay || !loading || !modalBody) return;
+    if (toggle && nav) {
+        toggle.addEventListener("click", () => {
+            const isOpen = nav.classList.toggle("open");
+            toggle.setAttribute("aria-expanded", isOpen);
+        });
 
-    modalTitle.textContent = track.album || track.title;
-    modalMeta.textContent = `${track.artist} / ${track.category}`;
+        // Close nav menu when clicking any nav link
+        nav.querySelectorAll("a").forEach(link => {
+            link.addEventListener("click", () => {
+                nav.classList.remove("open");
+                toggle.setAttribute("aria-expanded", "false");
+            });
+        });
+    }
+}
 
-    loading.style.display = "block";
-    modalBody.style.display = "none";
-    overlay.hidden = false;
+// ==============================================
+// SYSTEM HUD & AUDIO CONTEXT INITIALIZATION
+// ==============================================
+function initAudioSystemOverlay() {
+    const overlay = document.querySelector("#audio-init-overlay");
+    const initBtn = document.querySelector("#audio-init-btn");
 
-    const infoUrl = getInfoJsonUrl(track);
+    if (initBtn && overlay) {
+        initBtn.addEventListener("click", () => {
+            initializeAudioContext();
+            overlay.classList.add("hidden");
+            setTimeout(() => overlay.remove(), 600); // Cleanup from DOM
+        });
+    }
+}
+
+function initializeAudioContext() {
+    if (isAudioContextInitialized) return;
 
     try {
-        const response = await fetch(infoUrl + "?v=" + Date.now());
-        if (!response.ok) throw new Error("File not found");
-        const info = await response.json();
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        audioContext = new AudioContextClass();
+        analyserNode = audioContext.createAnalyser();
+        analyserNode.fftSize = 256;
+        
+        const bufferLength = analyserNode.frequencyBinCount;
+        dataArray = new Uint8Array(bufferLength);
 
-        document.querySelector("#modal-description").textContent = info.description || "No description provided.";
-        document.querySelector("#modal-date").textContent = info.releaseDate || info.release_date || "Unknown";
+        // Connect media source
+        if (audioEl) {
+            sourceNode = audioContext.createMediaElementSource(audioEl);
+            sourceNode.connect(analyserNode);
+            analyserNode.connect(audioContext.destination);
+        }
 
-        const performersText = Array.isArray(info.performers) ? info.performers.join(", ") : (info.performers || info.performer || "N/A");
-        const producersText = Array.isArray(info.producers) ? info.producers.join(", ") : (info.producers || "N/A");
-        const writersText = Array.isArray(info.writers) ? info.writers.join(", ") : (info.writers || "N/A");
-
-        document.querySelector("#modal-performers").textContent = performersText;
-        document.querySelector("#modal-producers").textContent = producersText;
-        document.querySelector("#modal-writers").textContent = writersText;
-
-        const labelName = info.label || "Independent";
-        document.querySelector("#modal-label-credit").textContent = `Provided by ${labelName}.`;
-
-        loading.style.display = "none";
-        modalBody.style.display = "block";
-    } catch (error) {
-        document.querySelector("#modal-description").textContent = "Release database entry offline or info.json missing for this project.";
-        document.querySelector("#modal-date").textContent = "N/A";
-        document.querySelector("#modal-performers").textContent = "N/A";
-        document.querySelector("#modal-producers").textContent = "N/A";
-        document.querySelector("#modal-writers").textContent = "N/A";
-        document.querySelector("#modal-label-credit").textContent = "";
-
-        loading.style.display = "none";
-        modalBody.style.display = "block";
+        isAudioContextInitialized = true;
+        startVisualizerPaintLoop();
+    } catch (e) {
+        console.error("Failed to initialize Web Audio context:", e);
     }
 }
 
+// ==============================================
+// CANVAS FREQUENCY WAVEFORM VISUALIZER
+// ==============================================
+function startVisualizerPaintLoop() {
+    const canvas = document.querySelector("#global-visualizer-canvas");
+    if (!canvas) return;
+
+    const ctx = canvas.getContext("2d");
+    
+    // Make canvas responsive
+    function resizeCanvas() {
+        canvas.width = canvas.parentElement.clientWidth;
+        canvas.height = canvas.parentElement.clientHeight;
+    }
+    resizeCanvas();
+    window.addEventListener("resize", resizeCanvas);
+
+    function paint() {
+        requestAnimationFrame(paint);
+
+        if (!isAudioContextInitialized || !analyserNode) return;
+
+        const width = canvas.width;
+        const height = canvas.height;
+        
+        ctx.clearRect(0, 0, width, height);
+        
+        analyserNode.getByteFrequencyData(dataArray);
+
+        // Draw cyberpunk visualizer bars
+        const barWidth = (width / dataArray.length) * 1.5;
+        let x = 0;
+
+        for (let i = 0; i < dataArray.length; i++) {
+            const percent = dataArray[i] / 255;
+            const barHeight = percent * height * 0.9;
+            
+            // Draw neon gradients
+            const gradient = ctx.createLinearGradient(0, height, 0, height - barHeight);
+            gradient.addColorStop(0, "rgba(0, 240, 255, 0.1)");
+            gradient.addColorStop(0.5, "rgba(0, 240, 255, 0.7)");
+            gradient.addColorStop(1, "rgba(255, 0, 85, 0.95)");
+
+            ctx.fillStyle = gradient;
+            ctx.shadowBlur = 4;
+            ctx.shadowColor = "#00f0ff";
+            
+            ctx.fillRect(x, height - barHeight, barWidth - 2, barHeight);
+            x += barWidth;
+        }
+    }
+    
+    paint();
+}
+
+// ==============================================
+// CUSTOM GLOBAL PERSISTENT PLAYER MODULE
+// ==============================================
+function initGlobalPlayerControls() {
+    const playBtn = document.querySelector("#global-player-play");
+    const prevBtn = document.querySelector("#global-player-prev");
+    const nextBtn = document.querySelector("#global-player-next");
+    const shuffleBtn = document.querySelector("#global-player-shuffle");
+    const repeatBtn = document.querySelector("#global-player-repeat");
+    const muteBtn = document.querySelector("#global-player-mute");
+    const queueBtn = document.querySelector("#global-player-queue-toggle");
+    
+    const timeline = document.querySelector("#player-timeline");
+    const timelineFill = document.querySelector("#player-timeline-fill");
+    const volumeSlider = document.querySelector("#player-volume");
+    const volumeFill = document.querySelector("#player-volume-fill");
+
+    const visToggle = document.querySelector("#global-player-visualizer-toggle");
+    const visWrapper = document.querySelector("#visualizer-wrapper");
+    const queueDrawer = document.querySelector("#queue-drawer");
+    const queueClose = document.querySelector("#queue-close");
+
+    if (audioEl) {
+        audioEl.addEventListener("ended", playNextTrack);
+        audioEl.addEventListener("timeupdate", () => {
+            updatePlayerTimeline(timeline, timelineFill);
+        });
+        audioEl.addEventListener("durationchange", () => {
+            if (timeline) timeline.max = audioEl.duration || 100;
+        });
+        audioEl.addEventListener("play", () => {
+            if (playBtn) playBtn.textContent = "PAUSE";
+            if (playBtn) playBtn.title = "Pause Track";
+        });
+        audioEl.addEventListener("pause", () => {
+            if (playBtn) playBtn.textContent = "PLAY";
+            if (playBtn) playBtn.title = "Play Track";
+        });
+    }
+
+    if (playBtn) {
+        playBtn.addEventListener("click", () => {
+            if (!isAudioContextInitialized) {
+                initializeAudioContext();
+            }
+            togglePlayState();
+        });
+    }
+
+    if (prevBtn) prevBtn.addEventListener("click", playPrevTrack);
+    if (nextBtn) nextBtn.addEventListener("click", playNextTrack);
+    
+    if (shuffleBtn) {
+        shuffleBtn.addEventListener("click", () => {
+            isShuffle = !isShuffle;
+            if (isShuffle) {
+                shuffleBtn.classList.add("active");
+                shuffleBtn.textContent = "SHUF (ON)";
+                shuffleBtn.title = "Shuffle (On)";
+                if (playbackQueue.length > 0 && currentQueueIndex !== -1) {
+                    generateShuffleQueue(currentQueueIndex);
+                }
+            } else {
+                shuffleBtn.classList.remove("active");
+                shuffleBtn.textContent = "SHUF";
+                shuffleBtn.title = "Shuffle (Off)";
+            }
+            renderQueueItems();
+        });
+    }
+
+    if (repeatBtn) {
+        repeatBtn.addEventListener("click", () => {
+            if (repeatMode === "none") {
+                repeatMode = "all";
+                repeatBtn.classList.add("active");
+                repeatBtn.textContent = "REP (ALL)";
+                repeatBtn.title = "Repeat (All)";
+            } else if (repeatMode === "all") {
+                repeatMode = "one";
+                repeatBtn.classList.add("active");
+                repeatBtn.textContent = "REP (ONE)";
+                repeatBtn.title = "Repeat (One)";
+            } else {
+                repeatMode = "none";
+                repeatBtn.classList.remove("active");
+                repeatBtn.textContent = "REP";
+                repeatBtn.title = "Repeat (Off)";
+            }
+        });
+    }
+
+    if (muteBtn) {
+        muteBtn.addEventListener("click", toggleMute);
+    }
+
+    if (timeline) {
+        timeline.addEventListener("input", () => {
+            if (audioEl) {
+                audioEl.currentTime = timeline.value;
+                if (timelineFill) {
+                    const pct = (audioEl.currentTime / audioEl.duration) * 100;
+                    timelineFill.style.width = `${pct}%`;
+                }
+            }
+        });
+    }
+
+    if (volumeSlider) {
+        volumeSlider.addEventListener("input", () => {
+            currentVolume = volumeSlider.value / 100;
+            if (audioEl) {
+                audioEl.volume = currentVolume;
+                audioEl.muted = false;
+            }
+            isMuted = false;
+            if (muteBtn) muteBtn.textContent = currentVolume === 0 ? "MUTED" : "VOL";
+            if (volumeFill) volumeFill.style.width = `${volumeSlider.value}%`;
+        });
+    }
+
+    if (visToggle && visWrapper) {
+        visToggle.addEventListener("click", () => {
+            if (!isAudioContextInitialized) {
+                initializeAudioContext();
+            }
+            const isHidden = visWrapper.hidden;
+            visWrapper.hidden = !isHidden;
+            visToggle.classList.toggle("active", isHidden);
+        });
+    }
+
+    if (queueBtn && queueDrawer) {
+        queueBtn.addEventListener("click", () => {
+            const isHidden = queueDrawer.hidden;
+            queueDrawer.hidden = !isHidden;
+            queueBtn.classList.toggle("active", isHidden);
+            if (isHidden) {
+                renderQueueItems();
+            }
+        });
+    }
+
+    if (queueClose && queueDrawer) {
+        queueClose.addEventListener("click", () => {
+            queueDrawer.hidden = true;
+            if (queueBtn) queueBtn.classList.remove("active");
+        });
+    }
+
+    // Home view Featured play button click binding
+    const featuredPlay = document.querySelector("#featured-play-btn");
+    if (featuredPlay) {
+        featuredPlay.addEventListener("click", () => {
+            if (allMusicTracks.length > 0) {
+                // Find latest dropped track based on chronologic setup
+                const latest = getLatestTrack(allMusicTracks);
+                playTrackFromCatalog(latest);
+            }
+        });
+    }
+}
+
+function togglePlayState() {
+    if (!audioEl || !currentPlayingTrack) return;
+    if (audioEl.paused) {
+        audioEl.play().catch(() => {});
+    } else {
+        audioEl.pause();
+    }
+}
+
+function updatePlayerTimeline(slider, fill) {
+    if (!audioEl || !slider) return;
+    slider.value = audioEl.currentTime;
+    
+    if (fill && audioEl.duration) {
+        const pct = (audioEl.currentTime / audioEl.duration) * 100;
+        fill.style.width = `${pct}%`;
+    }
+
+    const curTimeLabel = document.querySelector("#player-time-current");
+    const totalTimeLabel = document.querySelector("#player-time-total");
+
+    if (curTimeLabel) curTimeLabel.textContent = formatTime(audioEl.currentTime);
+    if (totalTimeLabel && audioEl.duration) totalTimeLabel.textContent = formatTime(audioEl.duration);
+}
+
+function toggleMute() {
+    const muteBtn = document.querySelector("#global-player-mute");
+    const volumeSlider = document.querySelector("#player-volume");
+    const volumeFill = document.querySelector("#player-volume-fill");
+
+    if (!audioEl) return;
+
+    isMuted = !isMuted;
+    audioEl.muted = isMuted;
+
+    if (muteBtn) muteBtn.textContent = isMuted ? "MUTED" : "VOL";
+    
+    if (volumeSlider && volumeFill) {
+        if (isMuted) {
+            volumeFill.style.width = "0%";
+            volumeSlider.value = 0;
+        } else {
+            volumeFill.style.width = `${currentVolume * 100}%`;
+            volumeSlider.value = currentVolume * 100;
+        }
+    }
+}
+
+function formatTime(secs) {
+    if (isNaN(secs)) return "0:00";
+    const minutes = Math.floor(secs / 60);
+    const seconds = Math.floor(secs % 60);
+    return `${minutes}:${seconds < 10 ? "0" : ""}${seconds}`;
+}
+
+// ==============================================
+// PLAYBACK QUEUE LOGIC
+// ==============================================
+function playTrackFromCatalog(track) {
+    // Look up visual index or path match in view list
+    const index = currentTracksInView.findIndex(t => t.path === track.path);
+    if (index !== -1) {
+        playTrackFromQueue(index);
+    } else {
+        // Fallback: direct set track if not found in current view index
+        playbackQueue = [track];
+        currentQueueIndex = 0;
+        setPlayerTrack(track);
+    }
+}
+
+function playTrackFromQueue(index) {
+    if (index < 0 || index >= currentTracksInView.length) return;
+
+    playbackQueue = [...currentTracksInView];
+    currentQueueIndex = index;
+    isAutoplayRandom = false;
+    playbackHistory = [];
+
+    if (isShuffle) {
+        generateShuffleQueue(index);
+    }
+
+    playCurrentTrack();
+}
+
+function generateShuffleQueue(startIndex) {
+    const indices = Array.from({ length: playbackQueue.length }, (_, i) => i);
+    const filteredIndices = indices.filter(idx => idx !== startIndex);
+
+    for (let i = filteredIndices.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [filteredIndices[i], filteredIndices[j]] = [filteredIndices[j], filteredIndices[i]];
+    }
+
+    shuffleQueue = [startIndex, ...filteredIndices];
+    currentQueueIndex = 0;
+}
+
+function playCurrentTrack() {
+    let trackIndex = currentQueueIndex;
+    if (isShuffle && shuffleQueue.length > 0) {
+        trackIndex = shuffleQueue[currentQueueIndex];
+    }
+
+    if (trackIndex < 0 || trackIndex >= playbackQueue.length) return;
+
+    const track = playbackQueue[trackIndex];
+
+    if (currentPlayingTrack && currentPlayingTrack !== track) {
+        playbackHistory.push(currentPlayingTrack);
+        if (playbackHistory.length > 50) playbackHistory.shift();
+    }
+    
+    currentPlayingTrack = track;
+    setPlayerTrack(track);
+    renderQueueItems();
+}
+
+function setPlayerTrack(track) {
+    const globalPlayerBar = document.querySelector("#global-player-bar");
+    const art = document.querySelector("#global-player-art");
+    const title = document.querySelector("#global-player-title");
+    const artist = document.querySelector("#global-player-artist");
+
+    if (!audioEl) return;
+
+    // Show persistent player
+    if (globalPlayerBar) {
+        globalPlayerBar.style.transform = "translateY(0)";
+    }
+
+    // Set element properties
+    audioEl.src = track.audioUrl;
+    
+    // Force browser play context trigger
+    if (isAudioContextInitialized && audioContext.state === "suspended") {
+        audioContext.resume();
+    }
+
+    audioEl.play().catch(e => {
+        console.log("Audio play request failed due to user-interaction security limits:", e);
+    });
+
+    if (title) title.textContent = track.title;
+    if (artist) artist.textContent = [track.artist, track.album, track.category].filter(Boolean).join(" / ");
+    
+    if (art) {
+        art.src = track.coverUrl || "assets/profile-avatar.png";
+        art.alt = `${track.title} cover art`;
+    }
+}
+
+function playNextTrack() {
+    if (!audioEl) return;
+
+    if (repeatMode === "one") {
+        audioEl.currentTime = 0;
+        audioEl.play().catch(() => {});
+        return;
+    }
+
+    if (isAutoplayRandom) {
+        playRandomAutoplayTrack();
+        return;
+    }
+
+    if (currentPlayingTrack && !isShuffle) {
+        const currentProjectKey = getProjectKey(currentPlayingTrack);
+        const projectTracks = playbackQueue.filter(t => getProjectKey(t) === currentProjectKey);
+        const isFinalSong = projectTracks.length === 0 || currentPlayingTrack.path === projectTracks[projectTracks.length - 1].path;
+
+        if (isFinalSong && repeatMode !== "all") {
+            isAutoplayRandom = true;
+            playRandomAutoplayTrack();
+            return;
+        }
+    }
+
+    const queueLength = isShuffle ? shuffleQueue.length : playbackQueue.length;
+    if (queueLength === 0) return;
+
+    if (currentQueueIndex < queueLength - 1) {
+        currentQueueIndex++;
+        playCurrentTrack();
+    } else {
+        if (repeatMode === "all") {
+            currentQueueIndex = 0;
+            playCurrentTrack();
+        } else {
+            isAutoplayRandom = true;
+            playRandomAutoplayTrack();
+        }
+    }
+}
+
+function playPrevTrack() {
+    if (!audioEl) return;
+
+    if (audioEl.currentTime > 3) {
+        audioEl.currentTime = 0;
+        audioEl.play().catch(() => {});
+        return;
+    }
+
+    if (isAutoplayRandom) {
+        if (playbackHistory.length > 0) {
+            const prevTrack = playbackHistory.pop();
+            currentPlayingTrack = prevTrack;
+            setPlayerTrack(prevTrack);
+        } else {
+            audioEl.currentTime = 0;
+            audioEl.play().catch(() => {});
+        }
+        return;
+    }
+
+    const queueLength = isShuffle ? shuffleQueue.length : playbackQueue.length;
+    if (queueLength === 0) return;
+
+    if (currentQueueIndex > 0) {
+        currentQueueIndex--;
+        playCurrentTrack();
+    } else {
+        if (repeatMode === "all") {
+            currentQueueIndex = queueLength - 1;
+            playCurrentTrack();
+        } else {
+            audioEl.currentTime = 0;
+            audioEl.play().catch(() => {});
+        }
+    }
+}
+
+function playRandomAutoplayTrack() {
+    if (!allMusicTracks.length) return;
+
+    const randomIndex = Math.floor(Math.random() * allMusicTracks.length);
+    const randomTrack = allMusicTracks[randomIndex];
+
+    if (currentPlayingTrack) {
+        playbackHistory.push(currentPlayingTrack);
+        if (playbackHistory.length > 50) playbackHistory.shift();
+    }
+    currentPlayingTrack = randomTrack;
+    setPlayerTrack(randomTrack);
+}
+
+function getProjectKey(track) {
+    if (!track) return "";
+    if (track.category === "Singles") {
+        return `Singles-${track.path}-${track.title}`;
+    }
+    return `${track.category}-${releaseNameFromPath(track)}`;
+}
+
+function releaseNameFromPath(track) {
+    if (track.album) return track.album;
+    const parts = String(track.path || "").split("/");
+    if (track.category === "EPs") return parts[2] || track.category;
+    if (track.category === "Albums and Mixtapes") return parts[2] || track.category;
+    if (track.category === "Compilations") return parts[2] || track.category;
+    return track.category;
+}
+
+function generateShuffleQueue(startIndex) {
+    const indices = Array.from({ length: playbackQueue.length }, (_, i) => i);
+    const filteredIndices = indices.filter(idx => idx !== startIndex);
+
+    for (let i = filteredIndices.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [filteredIndices[i], filteredIndices[j]] = [filteredIndices[j], filteredIndices[i]];
+    }
+
+    shuffleQueue = [startIndex, ...filteredIndices];
+    currentQueueIndex = 0;
+}
+
+function renderQueueItems() {
+    const listItems = document.querySelector("#queue-list-items");
+    if (!listItems) return;
+
+    if (playbackQueue.length === 0) {
+        listItems.innerHTML = "<p class='muted' style='padding: 1rem; text-align: center;'>Queue is empty</p>";
+        return;
+    }
+
+    listItems.innerHTML = playbackQueue.map((track, index) => {
+        let actualIndex = index;
+        if (isShuffle && shuffleQueue.length > 0) {
+            actualIndex = shuffleQueue[index];
+        }
+        
+        const isCurrent = currentPlayingTrack && currentPlayingTrack.path === playbackQueue[actualIndex].path;
+
+        return `
+            <div class="queue-item ${isCurrent ? 'active' : ''}" onclick="playQueueTrackAtIndex(${index})">
+                <img src="${playbackQueue[actualIndex].coverUrl || 'assets/profile-avatar.png'}" alt="cover">
+                <div class="queue-item-meta">
+                    <span class="queue-item-title">${escapeHtml(playbackQueue[actualIndex].title)}</span>
+                    <span class="queue-item-artist">${escapeHtml(playbackQueue[actualIndex].artist)}</span>
+                </div>
+            </div>
+        `;
+    }).join("");
+}
+
+// Globally bindable helper function for onclick triggers
+window.playQueueTrackAtIndex = function(index) {
+    currentQueueIndex = index;
+    playCurrentTrack();
+};
+
+// ==============================================
+// DATA FETCHING & RENDERING (MUSIC & BEATS)
+// ==============================================
 async function githubContents(path) {
     const encodedPath = path.split("/").map(encodeURIComponent).join("/");
     const url = `https://api.github.com/repos/${SITE_CONFIG.owner}/${SITE_CONFIG.repo}/contents/${encodedPath}?ref=${SITE_CONFIG.branch}`;
@@ -213,15 +787,6 @@ function escapeHtml(value) {
         .replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#39;");
-}
-
-function releaseNameFromPath(track) {
-    if (track.album) return track.album;
-    const parts = String(track.path || "").split("/");
-    if (track.category === "EPs") return parts[2] || track.category;
-    if (track.category === "Albums and Mixtapes") return parts[2] || track.category;
-    if (track.category === "Compilations") return parts[2] || track.category;
-    return track.category;
 }
 
 async function metadataFor(audioFile, files) {
@@ -296,13 +861,17 @@ async function loadMusicLibrary() {
     if (isLocalPreview) {
         tracks = await loadMusicManifest();
     } else {
-        const allGroups = await Promise.all(MUSIC_FOLDERS.map(buildTracks));
-        tracks = allGroups.flat();
+        try {
+            const allGroups = await Promise.all(MUSIC_FOLDERS.map(buildTracks));
+            tracks = allGroups.flat();
+        } catch (e) {
+            console.warn("GitHub fetch failed, loading manifest instead.");
+        }
         if (!tracks.length) tracks = await loadMusicManifest();
     }
 
     if (!tracks.length) {
-        library.innerHTML = "<p class=\"muted\">No music files found yet. Upload audio files and cover art to the Music folders, then publish the repo.</p>";
+        library.innerHTML = "<p class=\"muted\">No music files found. Please scan or generate manifest.</p>";
         return;
     }
 
@@ -311,17 +880,26 @@ async function loadMusicLibrary() {
     setupSearch();
     filterAndRenderMusic();
 
-    // Find the latest drop based on date
-    let latestTrack = tracks[0];
-    if (tracks.length > 0) {
-        const sortedByDate = [...tracks].sort((a, b) => {
-            const timeA = a.date ? new Date(a.date).getTime() : 0;
-            const timeB = b.date ? new Date(b.date).getTime() : 0;
-            return timeB - timeA;
-        });
-        latestTrack = sortedByDate[0];
+    // Populate the latest drop featured card
+    const latest = getLatestTrack(tracks);
+    setupFeatured(latest);
+}
+
+function getLatestTrack(tracks) {
+    if (!tracks.length) return null;
+    const sortedByDate = [...tracks].sort((a, b) => {
+        const timeA = a.date ? new Date(a.date).getTime() : 0;
+        const timeB = b.date ? new Date(b.date).getTime() : 0;
+        return timeB - timeA;
+    });
+    return sortedByDate[0];
+}
+
+function setupFeatured(track) {
+    const featuredTitle = document.querySelector("#featured-title");
+    if (featuredTitle && track) {
+        featuredTitle.textContent = `${track.title} - ${track.artist}`;
     }
-    setupFeatured(latestTrack);
 }
 
 function setupTabs() {
@@ -336,10 +914,15 @@ function setupTabs() {
         if (!button) return;
         tabs.querySelectorAll("button").forEach(tab => tab.classList.remove("active"));
         button.classList.add("active");
-        currentMusicCategory = button.dataset.category;
-        filterAndRenderMusic();
+        
+        // Dynamic filter
+        const category = button.dataset.category;
+        filterMusicCategory(category);
     });
 }
+
+let currentMusicCategory = "All";
+let currentMusicSearch = "";
 
 function setupSearch() {
     const searchInput = document.querySelector("#music-search");
@@ -349,6 +932,11 @@ function setupSearch() {
         currentMusicSearch = event.target.value;
         filterAndRenderMusic();
     });
+}
+
+function filterMusicCategory(category) {
+    currentMusicCategory = category;
+    filterAndRenderMusic();
 }
 
 function filterAndRenderMusic() {
@@ -373,7 +961,7 @@ function filterAndRenderMusic() {
         });
     }
 
-    // Apply limit if defined
+    // Apply limit if defined (e.g. limit for EPK view check)
     const limit = Number(library.dataset.limit || 0);
     const visibleTracks = limit ? filtered.slice(0, limit) : filtered;
 
@@ -385,7 +973,7 @@ function renderTracks(tracks, container) {
         container.innerHTML = `<p class="muted" style="grid-column: 1 / -1; text-align: center; padding: 2.5rem; font-family: 'Share Tech Mono', monospace; letter-spacing: 0.05em; text-transform: uppercase;">No matching tracks found.</p>`;
         return;
     }
-    const hasDockedPlayer = Boolean(document.querySelector("#main-audio"));
+
     const singles = tracks.filter(track => track.category === "Singles");
     const groupedTracks = tracks.filter(track => track.category !== "Singles");
     const releaseGroups = new Map();
@@ -409,7 +997,7 @@ function renderTracks(tracks, container) {
         group.tracks.push(track);
     });
 
-    // Sort tracks inside EPs, Albums, and Compilations by trackNumber (lowest to highest)
+    // Sort tracks inside folders by trackNumber
     releaseGroups.forEach(group => {
         group.tracks.sort((a, b) => {
             const numA = Number(a.trackNumber || 0);
@@ -419,7 +1007,7 @@ function renderTracks(tracks, container) {
         });
     });
 
-    // Sort function for chronology
+    // Chronology sorting helper
     const sortByChronology = (a, b) => {
         const yearA = a.year || (a.date ? a.date.split('-')[0] : "");
         const yearB = b.year || (b.date ? b.date.split('-')[0] : "");
@@ -429,11 +1017,9 @@ function renderTracks(tracks, container) {
         return b.date.localeCompare(a.date);
     };
 
-    // Sort Singles chronologically
     const sortedSingles = [...singles].sort(sortByChronology);
-
-    // Sort Folder releases chronologically
     const sortedGroups = [...releaseGroups.values()];
+    
     const getGroupChronologyKey = (group) => {
         const groupDates = group.tracks.map(t => t.date).filter(Boolean);
         const latestDate = groupDates.length > 0 ? [...groupDates].sort().reverse()[0] : "";
@@ -452,29 +1038,24 @@ function renderTracks(tracks, container) {
         return keyB.date.localeCompare(keyA.date);
     });
 
-    // Create the visual ordered tracks array
+    // Formordered linear index mapping
     const orderedTracks = [];
-    sortedSingles.forEach(track => {
-        orderedTracks.push(track);
-    });
+    sortedSingles.forEach(track => orderedTracks.push(track));
     sortedGroups.forEach(group => {
-        group.tracks.forEach(track => {
-            orderedTracks.push(track);
-        });
+        group.tracks.forEach(track => orderedTracks.push(track));
     });
 
-    // Assign visualIndex to tracks
     orderedTracks.forEach((track, index) => {
         track.visualIndex = index;
     });
 
     currentTracksInView = orderedTracks;
 
-    // Render singles and folder cards in HTML
-    const singlesHtml = sortedSingles.map(track => renderSingleTrackCard(track, hasDockedPlayer)).join("");
-    const groupHtml = sortedGroups.map(group => renderReleaseFolder(group, hasDockedPlayer)).join("");
+    const singlesHtml = sortedSingles.map(track => renderSingleTrackCard(track)).join("");
+    const groupHtml = sortedGroups.map(group => renderReleaseFolder(group)).join("");
     container.innerHTML = singlesHtml + groupHtml;
 
+    // Bind event listeners on rendering
     container.querySelectorAll("[data-track-index]").forEach(button => {
         button.addEventListener("click", () => {
             const index = Number(button.dataset.trackIndex);
@@ -482,7 +1063,6 @@ function renderTracks(tracks, container) {
         });
     });
 
-    // Info buttons click handler
     container.querySelectorAll(".info-button").forEach(button => {
         button.addEventListener("click", (event) => {
             event.stopPropagation();
@@ -493,7 +1073,7 @@ function renderTracks(tracks, container) {
     });
 }
 
-function renderSingleTrackCard(track, hasDockedPlayer) {
+function renderSingleTrackCard(track) {
     const metaParts = [track.artist, track.album, track.category ? `${track.category}${track.year ? ` (${track.year})` : ""}` : track.year].filter(Boolean);
     return `
         <article class="release-card">
@@ -502,7 +1082,7 @@ function renderSingleTrackCard(track, hasDockedPlayer) {
                 <h3>${escapeHtml(track.title)}</h3>
                 <p class="card-meta">${escapeHtml(metaParts.join(" / "))}</p>
                 <div class="card-actions" style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
-                    ${hasDockedPlayer ? `<button class="button primary" type="button" data-track-index="${track.visualIndex}">Play</button>` : `<audio controls controlsList="nodownload" oncontextmenu="return false;" preload="metadata" src="${track.audioUrl}"></audio>`}
+                    <button class="button primary" type="button" data-track-index="${track.visualIndex}">Play</button>
                     <button class="button info-button" type="button" data-info-track="${track.visualIndex}">Info</button>
                 </div>
             </div>
@@ -510,8 +1090,8 @@ function renderSingleTrackCard(track, hasDockedPlayer) {
     `;
 }
 
-function renderReleaseFolder(group, hasDockedPlayer) {
-    const groupYear = group.tracks.find(t => t.year)?.year || group.tracks.find(t => t.date && /\b\d{4}\b/.test(t.date))?.date.match(/\b\d{4}\b/)[0];
+function renderReleaseFolder(group) {
+    const groupYear = group.tracks.find(t => t.year)?.year || (group.tracks.find(t => t.date && /\b\d{4}\b/.test(t.date))?.date.match(/\b\d{4}\b/)?.[0] || "");
     const metaParts = [group.category ? `${group.category}${groupYear ? ` (${groupYear})` : ""}` : groupYear, `${group.tracks.length} song${group.tracks.length === 1 ? "" : "s"}`].filter(Boolean);
     return `
         <details class="music-folder">
@@ -533,7 +1113,7 @@ function renderReleaseFolder(group, hasDockedPlayer) {
                             <strong>${escapeHtml(track.title)}</strong>
                             <small>${escapeHtml(track.artist || "X/i\\D")}</small>
                         </span>
-                        ${hasDockedPlayer ? `<button class="button primary" type="button" data-track-index="${track.visualIndex}">Play</button>` : `<audio controls controlsList="nodownload" oncontextmenu="return false;" preload="metadata" src="${track.audioUrl}"></audio>`}
+                        <button class="button primary" type="button" data-track-index="${track.visualIndex}">Play</button>
                     </div>
                 `).join("")}
             </div>
@@ -541,32 +1121,91 @@ function renderReleaseFolder(group, hasDockedPlayer) {
     `;
 }
 
-function setupFeatured(track) {
-    const featuredPlayer = document.querySelector("#featured-player");
-    const featuredTitle = document.querySelector("#featured-title");
-    if (!featuredPlayer || !track) return;
-    featuredPlayer.src = track.audioUrl;
-    if (featuredTitle) featuredTitle.textContent = `${track.title} - ${track.artist}`;
-}
+// INFO MODAL ACTIONS
+function initInfoModal() {
+    const overlay = document.querySelector("#info-modal-overlay");
+    const closeBtn = document.querySelector("#info-modal-close");
 
-function setPlayerTrack(track) {
-    const audio = document.querySelector("#main-audio");
-    const title = document.querySelector("#player-title");
-    const meta = document.querySelector("#player-meta");
-    const art = document.querySelector("#player-art");
-    if (!audio) return;
+    if (closeBtn && overlay) {
+        closeBtn.addEventListener("click", () => {
+            overlay.hidden = true;
+        });
 
-    audio.src = track.audioUrl;
-    audio.play().catch(() => { });
-    if (title) title.textContent = track.title;
-    if (meta) meta.textContent = [track.artist, track.album, track.category].filter(Boolean).join(" / ");
-    if (art && track.coverUrl) {
-        art.src = track.coverUrl;
-        art.alt = `${track.title} cover art`;
-        art.hidden = false;
+        overlay.addEventListener("click", (event) => {
+            if (event.target === overlay) {
+                overlay.hidden = true;
+            }
+        });
     }
 }
 
+function getInfoJsonUrl(track) {
+    const lastSlash = track.path.lastIndexOf("/");
+    const folderPath = track.path.substring(0, lastSlash);
+    const infoPath = `${folderPath}/info.json`;
+    const isLocalPreview = ["", "localhost", "127.0.0.1"].includes(window.location.hostname);
+    if (isLocalPreview) {
+        return infoPath;
+    } else {
+        return `https://raw.githubusercontent.com/${SITE_CONFIG.owner}/${SITE_CONFIG.repo}/${SITE_CONFIG.branch}/${infoPath}`;
+    }
+}
+
+async function openInfoModal(track) {
+    const overlay = document.querySelector("#info-modal-overlay");
+    const loading = document.querySelector("#modal-loading");
+    const modalBody = document.querySelector("#modal-body");
+    const modalTitle = document.querySelector("#modal-project-title");
+    const modalMeta = document.querySelector("#modal-project-meta");
+
+    if (!overlay || !loading || !modalBody) return;
+
+    modalTitle.textContent = track.album || track.title;
+    modalMeta.textContent = `${track.artist} / ${track.category}`;
+
+    loading.style.display = "block";
+    modalBody.style.display = "none";
+    overlay.hidden = false;
+
+    const infoUrl = getInfoJsonUrl(track);
+
+    try {
+        const response = await fetch(infoUrl + "?v=" + Date.now());
+        if (!response.ok) throw new Error("File not found");
+        const info = await response.json();
+
+        document.querySelector("#modal-description").textContent = info.description || "No description provided.";
+        document.querySelector("#modal-date").textContent = info.releaseDate || info.release_date || "Unknown";
+
+        const performersText = Array.isArray(info.performers) ? info.performers.join(", ") : (info.performers || info.performer || "N/A");
+        const producersText = Array.isArray(info.producers) ? info.producers.join(", ") : (info.producers || "N/A");
+        const writersText = Array.isArray(info.writers) ? info.writers.join(", ") : (info.writers || "N/A");
+
+        document.querySelector("#modal-performers").textContent = performersText;
+        document.querySelector("#modal-producers").textContent = producersText;
+        document.querySelector("#modal-writers").textContent = writersText;
+
+        const labelName = info.label || "Independent";
+        document.querySelector("#modal-label-credit").textContent = `Provided by ${labelName}.`;
+
+        loading.style.display = "none";
+        modalBody.style.display = "block";
+    } catch (error) {
+        document.querySelector("#modal-description").textContent = "Release database entry offline or info.json missing for this project.";
+        document.querySelector("#modal-date").textContent = "N/A";
+        document.querySelector("#modal-performers").textContent = "N/A";
+        document.querySelector("#modal-producers").textContent = "N/A";
+        document.querySelector("#modal-writers").textContent = "N/A";
+        document.querySelector("#modal-label-credit").textContent = "";
+
+        loading.style.display = "none";
+        modalBody.style.display = "block";
+    }
+}
+
+// ==============================================
+// BEAT STORE LOADERS
+// ==============================================
 async function loadBeatsManifest() {
     try {
         const response = await fetch(`beats-manifest.json?v=${Date.now()}`);
@@ -588,26 +1227,21 @@ async function loadBeatStore() {
 
     const isLocalPreview = ["", "localhost", "127.0.0.1"].includes(window.location.hostname);
     containers.forEach(container => {
-        container.innerHTML = `<p class="muted">Loading beats from ${isLocalPreview ? "local manifest" : "GitHub"}...</p>`;
+        container.innerHTML = `<p class="muted">Loading beats...</p>`;
     });
 
     let beats = [];
     if (isLocalPreview) {
         beats = await loadBeatsManifest();
     } else {
-        let files = [];
         try {
-            files = await listFilesRecursive("Beats");
-        } catch {
-            files = [];
+            const files = await listFilesRecursive("Beats");
+            const audioFiles = files.filter(file => hasExtension(file, AUDIO_EXTENSIONS));
+            beats = await Promise.all(audioFiles.map(file => metadataFor(file, files)));
+        } catch (e) {
+            console.warn("Failed fetching beats from GitHub contents, loading manifest.");
         }
-
-        const audioFiles = files.filter(file => hasExtension(file, AUDIO_EXTENSIONS));
-        beats = await Promise.all(audioFiles.map(file => metadataFor(file, files)));
-
-        if (!beats.length) {
-            beats = await loadBeatsManifest();
-        }
+        if (!beats.length) beats = await loadBeatsManifest();
     }
 
     containers.forEach(container => {
@@ -648,27 +1282,30 @@ function openBeatInfoModal(beat) {
 
 function renderBeats(beats, container) {
     if (!beats.length) {
-        container.innerHTML = "<p class=\"muted\">No beats found yet. Add audio files to the Beats folder and publish the repo.</p>";
+        container.innerHTML = "<p class=\"muted\">No beats found.</p>";
         return;
     }
 
-    container.innerHTML = beats.map((beat, index) => `
-        <article class="beat-card">
-            ${beat.coverUrl ? `<img src="${beat.coverUrl}" alt="${beat.title} cover art">` : ""}
-            <div class="card-body">
-                <h3>${beat.title}</h3>
-                <p class="card-meta">${[beat.bpm && `${beat.bpm} BPM`, beat.key, beat.license].filter(Boolean).join(" / ") || "License details coming soon"}</p>
-                <audio controls controlsList="nodownload" oncontextmenu="return false;" preload="metadata" src="${beat.audioUrl}"></audio>
-                <div class="card-actions" style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.75rem;">
-                    <a class="button primary" href="${beat.paymentUrl || `mailto:${SITE_CONFIG.contactEmail}?subject=Beat license: ${encodeURIComponent(beat.title)}`}">${beat.price ? `Buy ${beat.price}` : "Request License"}</a>
-                    <div style="display: flex; gap: 0.5rem; width: 100%;">
-                        <a class="button" href="${beat.audioUrl}" download style="flex: 1; min-height: 2.2rem; padding: 0.2rem 0.5rem; font-size: 0.85rem; display: inline-flex; align-items: center; justify-content: center;">Download</a>
-                        <button class="button beat-info-btn" type="button" data-beat-index="${index}" style="flex: 1; min-height: 2.2rem; padding: 0.2rem 0.5rem; font-size: 0.85rem; display: inline-flex; align-items: center; justify-content: center;">Info</button>
+    container.innerHTML = beats.map((beat, index) => {
+        const beatObjString = encodeURIComponent(JSON.stringify(beat));
+        return `
+            <article class="beat-card">
+                ${beat.coverUrl ? `<img src="${beat.coverUrl}" alt="${escapeHtml(beat.title)} cover art">` : ""}
+                <div class="card-body">
+                    <h3>${escapeHtml(beat.title)}</h3>
+                    <p class="card-meta">${[beat.bpm && `${beat.bpm} BPM`, beat.key, beat.license].filter(Boolean).join(" / ") || "License details coming soon"}</p>
+                    <div class="card-actions" style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.75rem;">
+                        <button class="button primary" onclick="playBeatPreview('${beatObjString}')">Listen Preview</button>
+                        <a class="button" href="${beat.paymentUrl || `mailto:${SITE_CONFIG.contactEmail}?subject=Beat license: ${encodeURIComponent(beat.title)}`}">${beat.price ? `Buy ${beat.price}` : "Request License"}</a>
+                        <div style="display: flex; gap: 0.5rem; width: 100%;">
+                            <a class="button" href="${beat.audioUrl}" download style="flex: 1; min-height: 2.2rem; padding: 0.2rem 0.5rem; font-size: 0.85rem; display: inline-flex; align-items: center; justify-content: center;">Download</a>
+                            <button class="button beat-info-btn" type="button" data-beat-index="${index}" style="flex: 1; min-height: 2.2rem; padding: 0.2rem 0.5rem; font-size: 0.85rem; display: inline-flex; align-items: center; justify-content: center;">Info</button>
+                        </div>
                     </div>
                 </div>
-            </div>
-        </article>
-    `).join("");
+            </article>
+        `;
+    }).join("");
 
     container.querySelectorAll(".beat-info-btn").forEach(button => {
         button.addEventListener("click", () => {
@@ -678,6 +1315,31 @@ function renderBeats(beats, container) {
     });
 }
 
+// Play Beat Preview dynamically through the main player
+window.playBeatPreview = function(beatObjString) {
+    const beat = JSON.parse(decodeURIComponent(beatObjString));
+    
+    // Convert beat object style to match track catalog
+    const track = {
+        title: beat.title,
+        artist: beat.artist || "X/i\\D",
+        album: "Beat Catalog",
+        category: "Beats",
+        audioUrl: beat.audioUrl,
+        coverUrl: beat.coverUrl,
+        path: beat.path
+    };
+
+    currentTracksInView = [track];
+    playbackQueue = [track];
+    currentQueueIndex = 0;
+    
+    setPlayerTrack(track);
+};
+
+// ==============================================
+// LIVE SECTIONS ARCHIVES
+// ==============================================
 function loadLiveSection() {
     const player = document.querySelector("#live-player");
     const chat = document.querySelector("#live-chat");
@@ -688,228 +1350,9 @@ function loadLiveSection() {
     if (vods) {
         vods.innerHTML = SITE_CONFIG.live.vods.map(vod => `
             <a class="link-tile" href="${vod.url}">
-                <strong>${vod.title}</strong>
-                <span class="muted">${vod.date}</span>
+                <strong>${escapeHtml(vod.title)}</strong>
+                <span class="muted">${escapeHtml(vod.date)}</span>
             </a>
         `).join("");
     }
 }
-
-function getProjectKey(track) {
-    if (!track) return "";
-    if (track.category === "Singles") {
-        return `Singles-${track.path}-${track.title}`;
-    }
-    return `${track.category}-${releaseNameFromPath(track)}`;
-}
-
-function playTrackFromQueue(index) {
-    if (index < 0 || index >= currentTracksInView.length) return;
-
-    playbackQueue = [...currentTracksInView];
-    currentQueueIndex = index;
-    isAutoplayRandom = false;
-    playbackHistory = [];
-
-    if (isShuffle) {
-        generateShuffleQueue(index);
-    }
-
-    playCurrentTrack();
-}
-
-function generateShuffleQueue(startIndex) {
-    const indices = Array.from({ length: playbackQueue.length }, (_, i) => i);
-    const filteredIndices = indices.filter(idx => idx !== startIndex);
-
-    for (let i = filteredIndices.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [filteredIndices[i], filteredIndices[j]] = [filteredIndices[j], filteredIndices[i]];
-    }
-
-    shuffleQueue = [startIndex, ...filteredIndices];
-    currentQueueIndex = 0;
-}
-
-function playCurrentTrack() {
-    let trackIndex = currentQueueIndex;
-    if (isShuffle) {
-        trackIndex = shuffleQueue[currentQueueIndex];
-    }
-
-    if (trackIndex < 0 || trackIndex >= playbackQueue.length) return;
-
-    const track = playbackQueue[trackIndex];
-
-    if (currentPlayingTrack && currentPlayingTrack !== track) {
-        playbackHistory.push(currentPlayingTrack);
-        if (playbackHistory.length > 50) playbackHistory.shift();
-    }
-    currentPlayingTrack = track;
-
-    setPlayerTrack(track);
-}
-
-function playRandomAutoplayTrack() {
-    if (!allMusicTracks.length) return;
-
-    const randomIndex = Math.floor(Math.random() * allMusicTracks.length);
-    const randomTrack = allMusicTracks[randomIndex];
-
-    if (currentPlayingTrack) {
-        playbackHistory.push(currentPlayingTrack);
-        if (playbackHistory.length > 50) playbackHistory.shift();
-    }
-    currentPlayingTrack = randomTrack;
-    setPlayerTrack(randomTrack);
-}
-
-function playNextTrack() {
-    const audio = document.querySelector("#main-audio");
-    if (!audio) return;
-
-    if (repeatMode === "one") {
-        audio.currentTime = 0;
-        audio.play().catch(() => {});
-        return;
-    }
-
-    if (isAutoplayRandom) {
-        playRandomAutoplayTrack();
-        return;
-    }
-
-    if (currentPlayingTrack && !isShuffle) {
-        const currentProjectKey = getProjectKey(currentPlayingTrack);
-        const projectTracks = playbackQueue.filter(t => getProjectKey(t) === currentProjectKey);
-        const isFinalSong = projectTracks.length === 0 || currentPlayingTrack.path === projectTracks[projectTracks.length - 1].path;
-
-        if (isFinalSong && repeatMode !== "all") {
-            isAutoplayRandom = true;
-            playRandomAutoplayTrack();
-            return;
-        }
-    }
-
-    const queueLength = isShuffle ? shuffleQueue.length : playbackQueue.length;
-    if (queueLength === 0) return;
-
-    if (currentQueueIndex < queueLength - 1) {
-        currentQueueIndex++;
-        playCurrentTrack();
-    } else {
-        if (repeatMode === "all") {
-            currentQueueIndex = 0;
-            playCurrentTrack();
-        } else {
-            isAutoplayRandom = true;
-            playRandomAutoplayTrack();
-        }
-    }
-}
-
-function playPrevTrack() {
-    const audio = document.querySelector("#main-audio");
-    if (!audio) return;
-
-    if (audio.currentTime > 3) {
-        audio.currentTime = 0;
-        audio.play().catch(() => {});
-        return;
-    }
-
-    if (isAutoplayRandom) {
-        if (playbackHistory.length > 0) {
-            const prevTrack = playbackHistory.pop();
-            currentPlayingTrack = prevTrack;
-            setPlayerTrack(prevTrack);
-        } else {
-            audio.currentTime = 0;
-            audio.play().catch(() => {});
-        }
-        return;
-    }
-
-    const queueLength = isShuffle ? shuffleQueue.length : playbackQueue.length;
-    if (queueLength === 0) return;
-
-    if (currentQueueIndex > 0) {
-        currentQueueIndex--;
-        playCurrentTrack();
-    } else {
-        if (repeatMode === "all") {
-            currentQueueIndex = queueLength - 1;
-            playCurrentTrack();
-        } else {
-            audio.currentTime = 0;
-            audio.play().catch(() => {});
-        }
-    }
-}
-
-function initPlayerControls() {
-    const shuffleBtn = document.querySelector("#player-shuffle");
-    const prevBtn = document.querySelector("#player-prev");
-    const nextBtn = document.querySelector("#player-next");
-    const repeatBtn = document.querySelector("#player-repeat");
-
-    if (shuffleBtn) {
-        shuffleBtn.addEventListener("click", () => {
-            isShuffle = !isShuffle;
-            if (isShuffle) {
-                shuffleBtn.classList.add("active");
-                shuffleBtn.textContent = "SHUF (ON)";
-                shuffleBtn.title = "Shuffle (On)";
-
-                if (playbackQueue.length > 0 && currentQueueIndex !== -1) {
-                    let activeTrackIndex = currentQueueIndex;
-                    if (shuffleQueue.length > 0) {
-                        activeTrackIndex = shuffleQueue[currentQueueIndex];
-                    }
-                    generateShuffleQueue(activeTrackIndex);
-                }
-            } else {
-                shuffleBtn.classList.remove("active");
-                shuffleBtn.textContent = "SHUF";
-                shuffleBtn.title = "Shuffle (Off)";
-
-                if (playbackQueue.length > 0 && currentQueueIndex !== -1 && shuffleQueue.length > 0) {
-                    currentQueueIndex = shuffleQueue[currentQueueIndex];
-                }
-                shuffleQueue = [];
-            }
-        });
-    }
-
-    if (prevBtn) {
-        prevBtn.addEventListener("click", playPrevTrack);
-    }
-
-    if (nextBtn) {
-        nextBtn.addEventListener("click", playNextTrack);
-    }
-
-    if (repeatBtn) {
-        repeatBtn.addEventListener("click", () => {
-            if (repeatMode === "none") {
-                repeatMode = "all";
-                repeatBtn.classList.add("active");
-                repeatBtn.textContent = "REP (ALL)";
-                repeatBtn.title = "Repeat (All)";
-            } else if (repeatMode === "all") {
-                repeatMode = "one";
-                repeatBtn.classList.add("active");
-                repeatBtn.textContent = "REP (ONE)";
-                repeatBtn.title = "Repeat (One)";
-            } else {
-                repeatMode = "none";
-                repeatBtn.classList.remove("active");
-                repeatBtn.textContent = "REP";
-                repeatBtn.title = "Repeat (Off)";
-            }
-        });
-    }
-}
-
-
-

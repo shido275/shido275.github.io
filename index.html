@@ -5,159 +5,490 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>X/i\D | Homebase</title>
-    <meta name="description" content="The official homebase for X/i\D">
+    <meta name="description" content="The official homebase for X/i\D - Artist, Producer, and Beats licensing.">
     <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
+    <!-- Cyberpunk Grid and Background Elements -->
+    <div class="cyber-grid"></div>
+    <div class="cyber-scanlines"></div>
+
     <header class="site-header">
-        <a class="brand" href="index.html" aria-label="X/i\D home">X/i\D</a>
+        <a class="brand" href="#/home" aria-label="X/i\D home">X/i\D</a>
+        <button class="nav-mobile-toggle" aria-label="Toggle navigation" aria-expanded="false">
+            <span class="nav-icon"></span>
+        </button>
         <nav class="site-nav" aria-label="Primary navigation">
-            <a href="#top">Home</a>
-            <a href="link.html">All Links</a>
-            <a href="epk.html">EPK</a>
-            <a href="#music">Music</a>
-            <a href="beatstore.html">Beats</a>
-            <a href="portfolio.html">Portfolio</a>
-            <a href="#submissions">Submissions</a>
-            <a href="#live">Live</a>
-            <a href="#contact">Contact</a>
+            <a href="#/home" data-route="home">Home</a>
+            <a href="#/links" data-route="links">All Links</a>
+            <a href="#/epk" data-route="epk">EPK</a>
+            <a href="#/beats" data-route="beats">Beats</a>
+            <a href="#/portfolio" data-route="portfolio">Portfolio</a>
         </nav>
     </header>
 
-    <main>
-        <section class="hero section-band" id="top">
-            <div class="hero-copy">
-                <p class="eyebrow">FAKE Entertainment presents</p>
-                <h1>X/i\D</h1>
-                <p class="lead">X/i\D is a multi-instrumentalist, producer, and artist blending rap, singing, and
-                    songwriting into a singular sound. With releases ranging from 2021's Curse to the 2026 single
-                    4LLR1Z3, their music navigates an evolving creative landscape, focusing on raw expression and
-                    versatile production.</p>
-                <div class="hero-actions">
-                    <a class="button primary" href="#music">Play Music</a>
-                    <a class="button" href="beatstore.html">Browse Beats</a>
-                </div>
-            </div>
-            <div class="hero-panel" aria-label="Featured player">
-                <p class="panel-label">Now available</p>
-                <h2>Latest Drop</h2>
-                <audio controls controlsList="nodownload" oncontextmenu="return false;" preload="metadata"
-                    id="featured-player"></audio>
-                <p class="muted" id="featured-title">Upload music to your repo folders to populate the player.</p>
-            </div>
-        </section>
-
-
-        <section class="section-band" id="music">
-            <div class="section-heading">
-                <p class="eyebrow">Catalog</p>
-                <h2>Music Player</h2>
-                <p>Listen to X/i\D's music here first before it hits DSPs and retail stores.</p>
-            </div>
-            <div class="tabs" id="music-tabs" role="tablist" aria-label="Music categories"></div>
-            <div class="music-search-container">
-                <input type="text" id="music-search" placeholder="Search track, artist, or album..."
-                    aria-label="Search music catalog">
-            </div>
-            <div class="music-layout">
-                <div class="release-grid" id="music-library" aria-live="polite"></div>
-                <aside class="player-dock" aria-label="Music player">
-                    <img id="player-art" src="" alt="" hidden>
-                    <p class="panel-label">Selected track</p>
-                    <h3 id="player-title">No track selected</h3>
-                    <p class="muted" id="player-meta">Choose a song from the library.</p>
-                    <audio id="main-audio" controls controlsList="nodownload" oncontextmenu="return false;"
-                        preload="metadata"></audio>
-                    <div class="player-controls">
-                        <button id="player-shuffle" class="control-btn" title="Shuffle (Off)"
-                            type="button">SHUF</button>
-                        <button id="player-prev" class="control-btn" title="Previous Track" type="button">⏮</button>
-                        <button id="player-next" class="control-btn" title="Next Track" type="button">⏭</button>
-                        <button id="player-repeat" class="control-btn" title="Repeat (Off)" type="button">REP</button>
+    <main class="content-wrapper">
+        <!-- ==============================================
+             HOME VIEW
+             ============================================== -->
+        <section id="view-home" class="view-section active">
+            <section class="hero section-band" id="top">
+                <div class="hero-copy">
+                    <p class="eyebrow">FAKE Entertainment presents</p>
+                    <h1>X/i\D</h1>
+                    <p class="lead">X/i\D is a multi-instrumentalist, producer, and artist blending rap, singing, and
+                        songwriting into a singular sound. With releases ranging from 2021's Curse to the 2026 single
+                        4LLR1Z3, their music navigates an evolving creative landscape, focusing on raw expression and
+                        versatile production.</p>
+                    <div class="hero-actions">
+                        <a class="button primary" href="#/home#music">Play Music</a>
+                        <a class="button" href="#/beats">Browse Beats</a>
                     </div>
-                </aside>
+                </div>
+                <div class="hero-panel" aria-label="Featured player">
+                    <p class="panel-label">Now available</p>
+                    <h2>Latest Drop</h2>
+                    <div class="featured-drop-card">
+                        <div class="featured-drop-details">
+                            <span id="featured-title">Loading latest drop...</span>
+                        </div>
+                        <button class="button primary" id="featured-play-btn" type="button">Listen Now</button>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section-band" id="music">
+                <div class="section-heading">
+                    <p class="eyebrow">Catalog</p>
+                    <h2>Music Player</h2>
+                    <p>Listen to X/i\D's music here first before it hits DSPs and retail stores.</p>
+                </div>
+                <div class="tabs" id="music-tabs" role="tablist" aria-label="Music categories"></div>
+                <div class="music-search-container">
+                    <input type="text" id="music-search" placeholder="Search track, artist, or album..."
+                        aria-label="Search music catalog">
+                </div>
+                <div class="release-grid-container">
+                    <div class="release-grid" id="music-library" aria-live="polite"></div>
+                </div>
+            </section>
+
+            <section class="section-band" id="beat-preview-section">
+                <div class="section-heading">
+                    <p class="eyebrow">Licenses</p>
+                    <h2>Beat Store Preview</h2>
+                    <p>Listen to some of my beats below, or open the full store to check details, prices, and licenses.</p>
+                </div>
+                <div class="beat-grid" id="beats-preview" aria-live="polite"></div>
+                <div style="margin-top: 1.5rem; text-align: center;">
+                    <a class="button primary" href="#/beats">Open Full Beat Store</a>
+                </div>
+            </section>
+
+            <section class="section-band" id="submissions">
+                <div class="section-heading">
+                    <p class="eyebrow">Collaborate</p>
+                    <h2>Submissions</h2>
+                    <p>GitHub Pages cannot save visitor uploads directly into your repo. Connect this form to Formspree,
+                        Netlify Forms, Tally, or a custom serverless function, then review files before adding them to
+                        <code>submissions</code>.
+                    </p>
+                </div>
+                <form class="submission-form" action="https://formspree.io/f/YOUR_FORM_ID" method="POST"
+                    enctype="multipart/form-data">
+                    <label>Name<input name="name" autocomplete="name" required></label>
+                    <label>Email<input name="email" type="email" autocomplete="email" required></label>
+                    <label>Project type
+                        <select name="project_type">
+                            <option>Feature verse</option>
+                            <option>Beat submission</option>
+                            <option>Mix/master request</option>
+                            <option>Visual portfolio inquiry</option>
+                        </select>
+                    </label>
+                    <label>Message<textarea name="message" rows="5" required></textarea></label>
+                    <label>File upload<input name="upload" type="file"
+                            accept=".mp3,.wav,.m4a,.flac,.zip,.jpg,.png,.pdf"></label>
+                    <button class="button primary" type="submit">Send Submission</button>
+                </form>
+            </section>
+
+            <section class="section-band" id="live">
+                <div class="section-heading">
+                    <p class="eyebrow">Broadcasts</p>
+                    <h2>Live Stream</h2>
+                    <p>Browsers cannot play RTMP directly. Use your RTMP URL and stream key inside a platform like YouTube
+                        Live, Twitch, Mux, or Cloudflare Stream, then paste the watch and chat embeds into
+                        <code>site.js</code>.
+                    </p>
+                </div>
+                <div class="live-grid">
+                    <div class="embed-shell" id="live-player">Live player embed goes here.</div>
+                    <div class="embed-shell chat" id="live-chat">Chat embed goes here.</div>
+                </div>
+                <h3 class="subsection-title">VOD Archives</h3>
+                <div class="vod-grid" id="vod-archives"></div>
+            </section>
+
+            <section class="section-band" id="contact">
+                <div class="section-heading">
+                    <p class="eyebrow">Booking and business</p>
+                    <h2>Contact Me</h2>
+                </div>
+                <div class="contact-grid">
+                    <a class="contact-card" href="mailto:shidomusic275@gmail.com">shidomusic275@gmail.com</a>
+                    <figure class="qr-card">
+                        <img src="assets/qr-music.svg" alt="QR code for music links">
+                        <figcaption>Music links</figcaption>
+                    </figure>
+                    <figure class="qr-card">
+                        <img src="assets/qr-contact.svg" alt="QR code for contact links">
+                        <figcaption>Contact links</figcaption>
+                    </figure>
+                </div>
+            </section>
+        </section>
+
+        <!-- ==============================================
+             LINKS VIEW
+             ============================================== -->
+        <section id="view-links" class="view-section">
+            <div class="links-page">
+                <section class="all-links-hero section-band">
+                    <img class="profile-avatar" src="assets/profile-avatar.png" alt="X/i\D profile image">
+                    <p class="eyebrow">Official links</p>
+                    <h1>X/i\D</h1>
+                    <p class="lead">Music, beats, videos, booking, livestreams, submissions, and socials in one place.</p>
+                    <div class="quick-socials" aria-label="Social links">
+                        <a href="https://www.instagram.com/maoriboishido">Instagram</a>
+                        <a href="https://www.tiktok.com/@xidmusic">TikTok</a>
+                        <a href="https://www.youtube.com/@xidmusic">YouTube</a>
+                        <a href="https://musicbrainz.org/artist/b6060330-4802-450e-bd04-5e997ce61f43">MusicBrainz</a>
+                    </div>
+                </section>
+
+                <section class="link-stack section-band" aria-label="Featured links">
+                    <a class="mega-link accent-cyan" href="#/home#music">
+                        <span>Listen Now</span>
+                        <small>Singles, EPs, albums, mixtapes, and compilations</small>
+                    </a>
+                    <a class="mega-link accent-gold" href="#/beats">
+                        <span>Buy Beats</span>
+                        <small>Browse licenses and request exclusives</small>
+                    </a>
+                    <a class="mega-link accent-rose" href="#/home#submissions">
+                        <span>Submit Files</span>
+                        <small>Send verses, beats, visuals, or collaboration ideas</small>
+                    </a>
+                    <a class="mega-link accent-green" href="#/home#live">
+                        <span>Watch Live</span>
+                        <small>Streams, chat, and VOD archives</small>
+                    </a>
+                </section>
+
+                <section class="section-band">
+                    <div class="section-heading">
+                        <p class="eyebrow">Platforms</p>
+                        <h2>Music and Video</h2>
+                    </div>
+                    <div class="link-grid compact-links">
+                        <a class="link-tile" href="https://open.spotify.com/artist/6FfLMEo15eD7S10n3oDG8a">Spotify</a>
+                        <a class="link-tile" href="https://music.apple.com/us/artist/x-i-d/1626477785">Apple Music</a>
+                        <a class="link-tile" href="https://www.youtube.com/@xidmusic">YouTube Music</a>
+                        <a class="link-tile" href="https://shido333.bandcamp.com/">Bandcamp</a>
+                        <a class="link-tile" href="https://soundcloud.com/maoriboishido">SoundCloud</a>
+                        <a class="link-tile" href="https://audiomack.com/x-i-d-">Audiomack</a>
+                        <a class="link-tile" href="https://tidal.com/artist/21535416">Tidal</a>
+                        <a class="link-tile" href="https://www.bandlab.com/maoriboishido">BandLab</a>
+                        <a class="link-tile" href="https://music.amazon.com/artists/B08KFVTPHF/x-i-d">Amazon Music</a>
+                    </div>
+                </section>
+
+                <section class="section-band">
+                    <div class="section-heading">
+                        <p class="eyebrow">Socials</p>
+                        <h2>Follow</h2>
+                    </div>
+                    <div class="social-grid">
+                        <a href="https://www.instagram.com/maoriboishido"><strong>Instagram</strong><span>@maoriboishido</span></a>
+                        <a href="https://www.tiktok.com/@xidmusic"><strong>TikTok</strong><span>@xidmusic</span></a>
+                        <a href="https://x.com/etnadnisamok"><strong>X / Twitter</strong><span>@etnadnisamok</span></a>
+                        <a href="https://www.youtube.com/@xidmusic"><strong>Youtube</strong><span>Official Channel</span></a>
+                        <a href="https://kick.com/thenativepvnk"><strong>Kick</strong><span>Live Sessions</span></a>
+                        <a href="https://www.twitch.tv/xidmusic"><strong>Twitch</strong><span>Live sessions</span></a>
+                        <a href="https://rumble.com/user/yaboishido"><strong>Rumble</strong><span>Unrestricted Live Sessions</span></a>
+                        <a href="https://www.reddit.com/r/Shidothafakest/"><strong>Reddit</strong><span>Official Subreddit</span></a>
+                        <a href="#"><strong>Discord</strong><span>Community invite</span></a>
+                    </div>
+                </section>
+
+                <section class="section-band">
+                    <div class="section-heading">
+                        <p class="eyebrow">Business</p>
+                        <h2>Booking, Press, and Support</h2>
+                    </div>
+                    <div class="link-grid compact-links">
+                        <a class="link-tile" href="#/epk">EPK / Press Kit</a>
+                        <a class="link-tile" href="mailto:shidomusic275@gmail.com">Email Booking</a>
+                        <a class="link-tile" href="#">Merch Store</a>
+                        <a class="link-tile" href="#">Tip Jar</a>
+                        <a class="link-tile" href="#">Patreon</a>
+                        <a class="link-tile" href="#/portfolio">Portfolio</a>
+                    </div>
+                </section>
             </div>
         </section>
 
-        <section class="section-band" id="beat-preview">
-            <div class="section-heading">
-                <p class="eyebrow">Licenses</p>
-                <h2>Beat Store</h2>
-                <p>Upload MP3, WAV, M4A, or FLAC files to <code>Beats</code>. Add optional JSON metadata next to each
-                    beat for pricing and payment links.</p>
-            </div>
-            <div class="beat-grid" id="beats-preview" aria-live="polite"></div>
-            <a class="button primary" href="beatstore.html">Open Full Beat Store</a>
+        <!-- ==============================================
+             EPK VIEW
+             ============================================== -->
+        <section id="view-epk" class="view-section">
+            <section class="hero compact section-band">
+                <div class="hero-copy">
+                    <p class="eyebrow">Electronic press kit</p>
+                    <h1>X/i\D</h1>
+                    <p class="lead">A press-ready snapshot for promoters, playlist curators, blogs, collaborators, and venues.</p>
+                </div>
+                <div class="stat-grid">
+                    <div><strong>Genre</strong><span>Alternative hip-hop / production</span></div>
+                    <div><strong>Location</strong><span>Auckland, New Zealand</span></div>
+                    <div><strong>Booking</strong><span>shidomusic275@gmail.com</span></div>
+                </div>
+            </section>
+
+            <section class="section-band">
+                <div class="section-heading">
+                    <p class="eyebrow">Biography</p>
+                    <h2>Artist Story</h2>
+                </div>
+                <p>X/i\D is an artist and producer building a world around sharp production, cinematic visuals, and direct emotional writing. Hailing from Auckland, New Zealand, they have spent years honing a diverse style that moves seamlessly between driving synthetic drums, atmospheric samples, and vocal versatility.</p>
+                <p class="muted">Blending trap textures, synthwave aesthetics, and raw lyricism, their catalog represents a relentless pursuit of forward-thinking alternative rap. Working independently under FAKE Entertainment, they deliver complete sonic experiences—handling their own engineering, production, visual layout, and web systems.</p>
+            </section>
+
+            <section class="section-band">
+                <div class="section-heading">
+                    <p class="eyebrow">Assets</p>
+                    <h2>Photos</h2>
+                </div>
+                <div class="media-grid">
+                    <figure><img src="assets/press-photo-1.png" alt="X/i\D press photo 1"><figcaption>Studio Portrait</figcaption></figure>
+                    <figure><img src="assets/press-photo-2.png" alt="X/i\D press photo 2"><figcaption>Live Holographic Show</figcaption></figure>
+                    <figure><img src="assets/press-photo-3.png" alt="X/i\D press photo 3"><figcaption>Synthesizer Production setup</figcaption></figure>
+                </div>
+            </section>
+
+            <section class="section-band">
+                <div class="section-heading">
+                    <p class="eyebrow">Video</p>
+                    <h2>Music Videos and Performances</h2>
+                </div>
+                <div class="embed-shell wide">
+                    <iframe src="https://www.youtube.com/embed/videoseries?list=PL_JkO-8YJpHzbTLOgN46q0W_3Z6D7hFvB" title="YouTube video player" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                </div>
+            </section>
+
+            <section class="section-band">
+                <div class="section-heading">
+                    <p class="eyebrow">Press</p>
+                    <h2>Features and Highlights</h2>
+                </div>
+                <div class="list-stack">
+                    <a href="#">Independent Artist Spotlight - NZ alternative landscape</a>
+                    <a href="#">Beatstore Spotlight - Best emerging self-produced catalogs</a>
+                    <a href="#">Cyberpunk Club Scene - Live performance recap at Cyberia</a>
+                </div>
+            </section>
+
+            <section class="section-band">
+                <div class="section-heading">
+                    <p class="eyebrow">Contact</p>
+                    <h2>Booking and Press</h2>
+                </div>
+                <p>Email: <a href="mailto:shidomusic275@gmail.com">shidomusic275@gmail.com</a></p>
+                <p>Management / Distribution: FAKE Entertainment</p>
+            </section>
         </section>
 
-        <section class="section-band" id="submissions">
-            <div class="section-heading">
-                <p class="eyebrow">Collaborate</p>1
-                <h2>Submissions</h2>
-                <p>GitHub Pages cannot save visitor uploads directly into your repo. Connect this form to Formspree,
-                    Netlify Forms, Tally, or a custom serverless function, then review files before adding them to
-                    <code>submissions</code>.
-                </p>
-            </div>
-            <form class="submission-form" action="https://formspree.io/f/YOUR_FORM_ID" method="POST"
-                enctype="multipart/form-data">
-                <label>Name<input name="name" autocomplete="name" required></label>
-                <label>Email<input name="email" type="email" autocomplete="email" required></label>
-                <label>Project type
-                    <select name="project_type">
-                        <option>Feature verse</option>
-                        <option>Beat submission</option>
-                        <option>Mix/master request</option>
-                        <option>Visual portfolio inquiry</option>
-                    </select>
-                </label>
-                <label>Message<textarea name="message" rows="5" required></textarea></label>
-                <label>File upload<input name="upload" type="file"
-                        accept=".mp3,.wav,.m4a,.flac,.zip,.jpg,.png,.pdf"></label>
-                <button class="button primary" type="submit">Send Submission</button>
-            </form>
+        <!-- ==============================================
+             BEATS VIEW
+             ============================================== -->
+        <section id="view-beats" class="view-section">
+            <section class="hero compact section-band">
+                <div class="hero-copy">
+                    <p class="eyebrow">Beat store</p>
+                    <h1>License Beats</h1>
+                    <p class="lead">Browse the full catalog, listen to preview streams, and secure licensing rights directly.</p>
+                </div>
+                <div class="hero-panel">
+                    <p class="panel-label">Payment setup</p>
+                    <p>Static checkout needs an external payment link. Add PayPal, Stripe Payment Link, BeatStars, Airbit, Gumroad, or Ko-fi URLs in each beat metadata JSON file.</p>
+                </div>
+            </section>
+
+            <section class="section-band">
+                <div class="section-heading">
+                    <p class="eyebrow">Inventory</p>
+                    <h2>Available Beats</h2>
+                </div>
+                <div class="beat-grid" id="beat-store" aria-live="polite"></div>
+            </section>
+
+            <section class="section-band">
+                <div class="section-heading">
+                    <p class="eyebrow">Metadata example</p>
+                    <h2>How to add prices</h2>
+                </div>
+                <pre><code>{
+  "title": "Midnight Signal",
+  "producer": "X/i\\D",
+  "bpm": 142,
+  "key": "F minor",
+  "price": "$49",
+  "license": "Non-exclusive MP3/WAV",
+  "paymentUrl": "https://paypal.me/YOURNAME/49",
+  "cover": "cover.jpg"
+}</code></pre>
+            </section>
         </section>
 
-        <section class="section-band" id="live">
-            <div class="section-heading">
-                <p class="eyebrow">Broadcasts</p>
-                <h2>Live Stream</h2>
-                <p>Browsers cannot play RTMP directly. Use your RTMP URL and stream key inside a platform like YouTube
-                    Live, Twitch, Mux, or Cloudflare Stream, then paste the watch and chat embeds into
-                    <code>site.js</code>.
-                </p>
-            </div>
-            <div class="live-grid">
-                <div class="embed-shell" id="live-player">Live player embed goes here.</div>
-                <div class="embed-shell chat" id="live-chat">Chat embed goes here.</div>
-            </div>
-            <h3>VOD Archives</h3>
-            <div class="vod-grid" id="vod-archives"></div>
-        </section>
+        <!-- ==============================================
+             PORTFOLIO VIEW
+             ============================================== -->
+        <section id="view-portfolio" class="view-section">
+            <section class="hero compact section-band">
+                <div class="hero-copy">
+                    <p class="eyebrow">Selected work</p>
+                    <h1>Portfolio</h1>
+                    <p class="lead">A place for releases, production credits, visual direction, cover art, live work, and collaboration case studies.</p>
+                </div>
+            </section>
 
-        <section class="section-band" id="contact">
-            <div class="section-heading">
-                <p class="eyebrow">Booking and business</p>
-                <h2>Contact Me</h2>
-            </div>
-            <div class="contact-grid">
-                <a class="contact-card" href="mailto:shidomusic275@gmail.com">shidomusic275@gmail.com</a>
-                <figure class="qr-card">
-                    <img src="assets/qr-music.svg" alt="QR code for music links">
-                    <figcaption>Music links</figcaption>
-                </figure>
-                <figure class="qr-card">
-                    <img src="assets/qr-contact.svg" alt="QR code for contact links">
-                    <figcaption>Contact links</figcaption>
-                </figure>
-            </div>
+            <section class="section-band">
+                <div class="portfolio-grid">
+                    <article class="project-card">
+                        <img src="assets/project-1.svg" alt="Project artwork placeholder">
+                        <h2>Release Campaign</h2>
+                        <p>Detailed campaign strategies, sound design, marketing structures, and performance metrics for the debut launch of "Curse" campaign.</p>
+                        <a href="#">View Project</a>
+                    </article>
+                    <article class="project-card">
+                        <img src="assets/project-2.svg" alt="Project artwork placeholder">
+                        <h2>Production Credit</h2>
+                        <p>Showcase beats, audio engineering, mixing, mastering, and collaborative projects for local artists in the Auckland community.</p>
+                        <a href="#">View Credit</a>
+                    </article>
+                    <article class="project-card">
+                        <img src="assets/project-3.svg" alt="Project artwork placeholder">
+                        <h2>Visual Direction</h2>
+                        <p>Branding typography, promotional renders, live visual backdrop loops, photoshoots, and complete web development work.</p>
+                        <a href="#">View Visuals</a>
+                    </article>
+                </div>
+            </section>
         </section>
     </main>
+
+    <!-- Global Persistent Music Player Bar -->
+    <div class="player-bar" id="global-player-bar">
+        <div class="player-bar-container">
+            <!-- Track Info -->
+            <div class="player-track-info">
+                <img id="global-player-art" src="assets/profile-avatar.png" alt="Cover Art">
+                <div class="global-track-details">
+                    <span id="global-player-title">No Track Selected</span>
+                    <span id="global-player-artist" class="muted">Choose a song from the library</span>
+                </div>
+            </div>
+
+            <!-- Main Controls -->
+            <div class="player-bar-controls">
+                <div class="player-buttons">
+                    <button id="global-player-shuffle" class="bar-btn" title="Shuffle (Off)">SHUF</button>
+                    <button id="global-player-prev" class="bar-btn" title="Previous Track">⏮</button>
+                    <button id="global-player-play" class="bar-btn primary-play" title="Play">PLAY</button>
+                    <button id="global-player-next" class="bar-btn" title="Next Track">⏭</button>
+                    <button id="global-player-repeat" class="bar-btn" title="Repeat (Off)">REP</button>
+                </div>
+                <div class="player-timeline-container">
+                    <span id="player-time-current" class="time-label">0:00</span>
+                    <div class="progress-bar-wrapper">
+                        <input type="range" id="player-timeline" min="0" value="0" step="0.1">
+                        <div class="progress-bar-fill" id="player-timeline-fill"></div>
+                    </div>
+                    <span id="player-time-total" class="time-label">0:00</span>
+                </div>
+            </div>
+
+            <!-- Extra Buttons & Volume -->
+            <div class="player-bar-extra">
+                <button id="global-player-visualizer-toggle" class="bar-btn" title="Toggle Visualizer">VIS</button>
+                <div class="volume-container">
+                    <button id="global-player-mute" class="bar-btn" title="Mute/Unmute">VOL</button>
+                    <div class="volume-slider-wrapper">
+                        <input type="range" id="player-volume" min="0" max="100" value="70">
+                        <div class="volume-fill" id="player-volume-fill"></div>
+                    </div>
+                </div>
+                <button id="global-player-queue-toggle" class="bar-btn" title="Toggle Queue">QUEUE</button>
+            </div>
+        </div>
+
+        <!-- Canvas Audio Visualizer overlay -->
+        <div class="visualizer-wrapper" id="visualizer-wrapper" hidden>
+            <canvas id="global-visualizer-canvas"></canvas>
+            <div class="visualizer-overlay-msg">Audio Stream Active</div>
+        </div>
+
+        <!-- Dynamic Queue Drawer -->
+        <div class="queue-drawer" id="queue-drawer" hidden>
+            <div class="queue-header">
+                <h4>Playback Queue</h4>
+                <button id="queue-close" class="close-btn" aria-label="Close Queue">&times;</button>
+            </div>
+            <div class="queue-list" id="queue-list-items">
+                <!-- Javascript builds items here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for release information details -->
+    <div id="info-modal-overlay" class="info-modal-overlay" hidden>
+        <div class="info-modal">
+            <button id="info-modal-close" class="info-modal-close" type="button" aria-label="Close modal">&times;</button>
+            <div class="info-modal-content">
+                <h2 id="modal-project-title">Release Title</h2>
+                <p class="modal-project-meta" id="modal-project-meta">Artist / Category</p>
+                <div id="modal-loading" class="muted">Loading database...</div>
+                <div id="modal-body" style="display: none;">
+                    <p class="modal-description" id="modal-description"></p>
+                    <div class="modal-specs">
+                        <div><strong>Release Date:</strong> <span id="modal-date"></span></div>
+                        <div><strong>Performers:</strong> <span id="modal-performers"></span></div>
+                        <div><strong>Producers:</strong> <span id="modal-producers"></span></div>
+                        <div><strong>Writers:</strong> <span id="modal-writers"></span></div>
+                    </div>
+                    <p class="modal-label-credit" id="modal-label-credit"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- System initialize click screen overlay (necessary for audio context visualizer auto-play permissions) -->
+    <div id="audio-init-overlay" class="audio-init-overlay">
+        <div class="init-card">
+            <h2>INITIALIZING HUD SYSTEM</h2>
+            <p>Accessing telemetry modules and catalog databases...</p>
+            <button id="audio-init-btn" class="button primary">Initialize Core</button>
+        </div>
+    </div>
 
     <footer>
         <p>&copy; <span id="year"></span> X/i\D | FAKE Entertainment. All rights reserved.</p>
     </footer>
+
+    <!-- Audio Element managed by Javascript -->
+    <audio id="main-audio" preload="metadata" crossorigin="anonymous"></audio>
 
     <script src="site.js"></script>
 </body>
