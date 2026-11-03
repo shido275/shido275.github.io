@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Release Importer | X/i\D</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="../style.css">
+    <link rel="stylesheet" href="admin.css">
+</head>
+
+<body class="importer">
+    <div class="noise-layer"></div>
+    <div class="scan-layer"></div>
+
+    <header class="site-header importer-bar">
+        <a class="brand" href="../index.html">X/i\D</a>
+        <p class="importer-bar__title">Release Importer</p>
+        <a class="button" href="../index.html#/home">Back to site</a>
+    </header>
+
+    <main class="importer-main">
+        <section class="panel" aria-labelledby="connect-heading">
+            <div class="panel-head">
+                <p class="eyebrow">Step one</p>
+                <h2 id="connect-heading">Connect</h2>
+            </div>
+            <div class="field-grid">
+                <label>Owner
+                    <input id="cfg-owner" autocomplete="off" spellcheck="false" placeholder="shido275">
+                </label>
+                <label>Repository
+                    <input id="cfg-repo" autocomplete="off" spellcheck="false" placeholder="shido275.github.io">
+                </label>
+                <label>Base branch
+                    <input id="cfg-branch" autocomplete="off" spellcheck="false" placeholder="main">
+                </label>
+                <label>Token
+                    <input id="cfg-token" type="password" autocomplete="off" spellcheck="false" placeholder="github_pat_...">
+                </label>
+            </div>
+            <p class="hint">Use a fine-grained token scoped to this one repository with <strong>Contents: Read and
+                    write</strong>. It is kept in this browser's local storage and sent only to
+                <code>api.github.com</code>.</p>
+            <div class="row">
+                <button class="button primary" id="btn-connect" type="button">Save &amp; verify</button>
+                <button class="button" id="btn-forget" type="button">Forget token</button>
+                <span class="status" id="conn-status" role="status">Not connected</span>
+            </div>
+        </section>
+
+        <section class="panel" aria-labelledby="release-heading">
+            <div class="panel-head">
+                <p class="eyebrow">Step two</p>
+                <h2 id="release-heading">Release</h2>
+            </div>
+            <div class="field-grid">
+                <label>Category
+                    <select id="form-category"></select>
+                </label>
+                <label>Release folder
+                    <input id="form-release" list="release-list" autocomplete="off" placeholder="STUNTIN SZN">
+                    <datalist id="release-list"></datalist>
+                </label>
+                <label>Album name
+                    <input id="form-album" autocomplete="off" placeholder="Defaults to the release folder">
+                </label>
+                <label>Artist
+                    <input id="form-artist" autocomplete="off" value="X/i\D">
+                </label>
+                <label>Release date
+                    <input id="form-date" type="date">
+                </label>
+                <label>Cover art
+                    <input id="form-cover" type="file" accept=".jpg,.jpeg,.png,.webp,image/*">
+                </label>
+            </div>
+
+            <div class="dropzone" id="dropzone">
+                <strong>Drop audio files</strong>
+                <span>.mp3 - .wav - .m4a - .flac, or
+                    <label class="link-label">browse
+                        <input id="form-audio" type="file" multiple accept=".mp3,.wav,.m4a,.flac,audio/*" hidden>
+                    </label>
+                </span>
+            </div>
+
+            <p class="target-line">Writes to <code id="target-folder">-</code></p>
+
+            <table class="track-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Title</th>
+                        <th>File</th>
+                        <th>Track</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="track-rows"></tbody>
+            </table>
+            <p class="muted" id="track-empty">No audio queued yet.</p>
+        </section>
+
+        <section class="panel" aria-labelledby="import-heading">
+            <div class="panel-head">
+                <p class="eyebrow">Step three</p>
+                <h2 id="import-heading">Commit</h2>
+            </div>
+            <div class="option-stack">
+                <label class="checkbox"><input type="checkbox" id="opt-dryrun"> Dry run - build the plan, write nothing</label>
+                <label class="checkbox"><input type="checkbox" id="opt-newbranch"> Commit to a new branch instead of the
+                    base branch</label>
+            </div>
+            <div class="field-grid">
+                <label>Branch for this import
+                    <input id="opt-branchname" autocomplete="off" spellcheck="false">
+                </label>
+                <label>Commit message
+                    <input id="opt-message" autocomplete="off">
+                </label>
+            </div>
+            <div class="row">
+                <button class="button primary" id="btn-plan" type="button">Preview plan</button>
+                <button class="button primary" id="btn-import" type="button" disabled>Import release</button>
+            </div>
+            <div id="plan-output" aria-live="polite"></div>
+        </section>
+
+        <section class="panel" aria-labelledby="log-heading">
+            <div class="panel-head">
+                <p class="eyebrow">Trace</p>
+                <h2 id="log-heading">Log</h2>
+            </div>
+            <pre class="log" id="log" aria-live="polite"></pre>
+        </section>
+    </main>
+
+    <script src="import-core.js"></script>
+    <script src="app.js"></script>
+</body>
+
+</html>
