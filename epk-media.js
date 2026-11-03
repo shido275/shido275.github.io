@@ -328,7 +328,7 @@
     const HLS_JS_URL = "https://cdn.jsdelivr.net/npm/hls.js@1/dist/hls.min.js";
     let hlsJsPromise = null;
     let liveKey = null;
-    let liveSource = "";
+    let endpointDownUntil = 0;
 
     const saveData = () => Boolean(navigator.connection && navigator.connection.saveData);
     const narrowScreen = () => Boolean(window.matchMedia && window.matchMedia("(max-width: 720px)").matches);
@@ -494,28 +494,34 @@
         }
     }
 
-    async function fetchLive() {
-        const [remote, local] = await Promise.all([
-            fetchJson(LIVE_ENDPOINT, 7000),
-            fetchJson(LIVE_URL)
-        ]);
+    /*  Asks the Worker for the current state. A refusal is remembered, so a
+        phone on a poor connection does not pay for the same timeout on every
+        poll while the committed file already answers the question. */
+    async function fetchLiveRemote() {
+        if (Date.now() < endpointDownUntil) return null;
 
+        const remote = await fetchJson(LIVE_ENDPOINT, 4000);
         if (remote && typeof remote.live === "boolean") {
-            liveSource = "endpoint";
+            endpointDownUntil = 0;
             return remote;
         }
 
-        liveSource = local ? "live.json" : "none";
-        return local;
+        endpointDownUntil = Date.now() + 10 * 60 * 1000;
+        return null;
     }
 
     async function watchLive() {
-        renderLive(await fetchLive());
+        // Paint from the same-origin file first: it is one small request and it
+        // cannot hang, so the section is on screen before any third party is.
+        renderLive(await fetchJson(LIVE_URL));
+
+        const remote = await fetchLiveRemote();
+        if (remote) renderLive(remote);
 
         // Poll lightly, and again the moment the tab comes back to the front.
         const refresh = async () => {
             if (document.hidden) return;
-            const next = await fetchLive();
+            const next = (await fetchLiveRemote()) || (await fetchJson(LIVE_URL));
             if (next) renderLive(next);
         };
 
