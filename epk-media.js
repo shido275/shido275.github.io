@@ -13,6 +13,11 @@
     const MEDIA_URL = "epk-media.json";
     const LINKS_URL = "links.json";
     const LIVE_URL = "live.json";
+    /*  The Worker endpoint in live-endpoint/ reads the channel from a network
+        Rumble answers and returns the same shape with CORS headers. live.json
+        is committed, so it is the fallback: whichever path works, the section
+        still renders. */
+    const LIVE_ENDPOINT = "https://site-14757b1c0e0449c9be9c7afe7a79463d.freebuff.page/";
     const DEFAULT_INTERVAL = 6000;
     const LIVE_POLL_MS = 60000;
 
@@ -26,9 +31,13 @@
         }[character]));
     }
 
-    async function fetchJson(url) {
+    async function fetchJson(url, timeoutMs) {
         try {
-            const response = await fetch(url, { cache: "no-cache" });
+            const options = { cache: "no-cache" };
+            if (timeoutMs && typeof AbortSignal !== "undefined" && AbortSignal.timeout) {
+                options.signal = AbortSignal.timeout(timeoutMs);
+            }
+            const response = await fetch(url, options);
             if (!response.ok) return null;
             return await response.json();
         } catch {
@@ -319,6 +328,17 @@
     const HLS_JS_URL = "https://cdn.jsdelivr.net/npm/hls.js@1/dist/hls.min.js";
     let hlsJsPromise = null;
     let liveKey = null;
+    let liveSource = "";
+
+    const saveData = () => Boolean(navigator.connection && navigator.connection.saveData);
+    const narrowScreen = () => Boolean(window.matchMedia && window.matchMedia("(max-width: 720px)").matches);
+
+    /* Autoplay is only worth it when the browser will actually start it: a
+       data-saver or reduced-motion visitor gets the poster and a play button. */
+    function autoplayAttributes() {
+        if (saveData() || reducedMotion()) return "";
+        return "autoplay muted";
+    }
 
     function loadHlsJs() {
         if (window.Hls) return Promise.resolve(window.Hls);
@@ -368,7 +388,16 @@
                 giveUp();
                 return;
             }
-            const player = new Hls({ lowLatencyMode: true, backBufferLength: 30 });
+            /* Phones never need the 1080p rendition this stream offers, and a
+               short buffer keeps the live edge without draining a battery. */
+            const player = new Hls({
+                lowLatencyMode: true,
+                capLevelToPlayerSize: saveData() || narrowScreen(),
+                maxBufferLength: 20,
+                maxMaxBufferLength: 40,
+                backBufferLength: 20,
+                enableWorker: true
+            });
             player.loadSource(stream.hlsUrl);
             player.attachMedia(video);
             player.on(Hls.Events.MANIFEST_PARSED, play);
@@ -379,6 +408,32 @@
                 }
             });
         });
+    }
+
+    /* A phone should not spend its data allowance on a stream scrolled out of
+       sight: leaving the viewport pauses it, returning resumes it, and a pause
+       the visitor chose is never overridden. */
+    function watchInViewport(video) {
+        if (!video || !("IntersectionObserver" in window)) return;
+
+        const observer = new IntersectionObserver(entries => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    if (video.dataset.autoPaused === "1") {
+                        delete video.dataset.autoPaused;
+                        const started = video.play();
+                        if (started && started.catch) started.catch(() => {});
+                    }
+                    return;
+                }
+                if (!video.paused) {
+                    video.dataset.autoPaused = "1";
+                    video.pause();
+                }
+            });
+        }, { threshold: 0.2 });
+
+        observer.observe(video);
     }
 
     function renderLive(doc) {
@@ -400,7 +455,7 @@
             player.innerHTML = `
                 <div class="live-embed">
                     ${stream.hlsUrl
-                        ? `<video class="live-video" controls autoplay muted playsinline preload="metadata"
+                        ? `<video class="live-video" controls playsinline preload="metadata" ${autoplayAttributes()}
                                 poster="${escapeHtml(stream.thumb || "")}"></video>`
                         : `<iframe src="${escapeHtml(stream.embedUrl)}" title="${escapeHtml(stream.title || "Rumble livestream")}"
                                 allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>`}
@@ -411,7 +466,11 @@
                     <a class="live-link" href="${escapeHtml(stream.pageUrl || channel)}" target="_blank" rel="noopener">Open on Rumble</a>
                 </div>
             `;
-            if (stream.hlsUrl) attachStream(player.querySelector(".live-video"), stream, channel);
+            const video = player.querySelector(".live-video");
+            if (stream.hlsUrl) {
+                attachStream(video, stream, channel);
+                watchInViewport(video);
+            }
         } else {
             player.classList.remove("live-on");
             player.innerHTML = `
@@ -435,16 +494,33 @@
         }
     }
 
-    async function watchLive() {
-        const doc = await fetchJson(LIVE_URL);
-        renderLive(doc);
+    async function fetchLive() {
+        const [remote, local] = await Promise.all([
+            fetchJson(LIVE_ENDPOINT, 7000),
+            fetchJson(LIVE_URL)
+        ]);
 
-        // The workflow refreshes live.json every few minutes; poll lightly.
-        window.setInterval(async () => {
+        if (remote && typeof remote.live === "boolean") {
+            liveSource = "endpoint";
+            return remote;
+        }
+
+        liveSource = local ? "live.json" : "none";
+        return local;
+    }
+
+    async function watchLive() {
+        renderLive(await fetchLive());
+
+        // Poll lightly, and again the moment the tab comes back to the front.
+        const refresh = async () => {
             if (document.hidden) return;
-            const next = await fetchJson(LIVE_URL);
+            const next = await fetchLive();
             if (next) renderLive(next);
-        }, LIVE_POLL_MS);
+        };
+
+        window.setInterval(refresh, LIVE_POLL_MS);
+        document.addEventListener("visibilitychange", refresh);
     }
 
     /* -------------------------------------------------------------------- boot */
