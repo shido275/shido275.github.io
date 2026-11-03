@@ -14,7 +14,7 @@ Live at **https://shido275.github.io/admin/**
 | **Photos** | `assets/photos/*`, `epk-media.json` | EPK → Photos slideshow |
 | **Videos** | `assets/videos/*`, `epk-media.json` | EPK → Music Videos and Performances |
 | **All Links** | `links.json` | `#/links` directory |
-| **Manage** | deletes releases, tracks, EPK media, links | everything above |
+| **Manage** | reorders and deletes releases, tracks, EPK media, links | everything above |
 
 Every tool previews its plan first (files, sizes, warnings) and then commits
 blobs → tree → commit → ref in one atomic commit. A failure leaves the branch
@@ -26,11 +26,32 @@ untouched.
    **Settings → Developer settings → Fine-grained tokens → Generate new token**.
 2. Scope it to `shido275/shido275.github.io` only, with
    **Repository permissions → Contents: Read and write**.
-3. Open `/admin/`, go to **Connect**, paste the token and press **Save & verify**.
+3. Open `/admin/`, choose a passcode, then go to **Connect**, paste the token and
+   press **Save & verify**.
 
 The token is stored in this browser's `localStorage` and sent only to
 `api.github.com`. **Forget token** wipes it. `/admin/` is public but does
 nothing without a token — never commit one to the repo.
+
+## Passcode
+
+The dashboard opens behind a passcode. On the first visit you choose one (at
+least six characters) and are let in; after that the page starts locked, and
+**Lock** in the header closes it again — as does twenty minutes of inactivity.
+
+The passcode is not just a curtain: it is the key to the token. The token is
+encrypted with AES-GCM under a PBKDF2 key derived from the passcode, so
+`localStorage` holds a cipher rather than a credential, and the dashboard cannot
+read the token until the passcode is entered. A token saved later through
+**Connect** is intercepted and sealed the same way.
+
+Change the passcode in **Connect → Change the passcode**. Changing it re-seals
+the token you are signed in with, so the old one is not needed.
+
+There is no recovery: losing the passcode means **Forgot it - reset the vault**,
+which deletes the sealed token, then pasting a new token in Connect. Because
+`/admin/` is a public page, treat the passcode as a lock on this browser rather
+than a server secret — the token's own scope is still the real protection.
 
 ## Releases
 
@@ -70,17 +91,30 @@ into `#/links`. Empty groups keep the built-in markup for that section. Only
 `https://`, `mailto:`, `tel:`, `#` routes and relative paths are accepted;
 `javascript:` links are dropped with a warning.
 
-## Manage and delete
+## Manage: reorder and delete
 
 The **Manage** tool lists everything already published — releases, their
-tracks, EPK photos, EPK videos and every link group — and deletes it. It reads
-the branch once (catalogue, `epk-media.json`, `links.json` and the full file
-tree), so a deletion also removes the files, not just the index entry.
+tracks, EPK photos, EPK videos and every link group — and reorders or deletes
+it. It reads the branch once (catalogue, `epk-media.json`, `links.json` and the
+full file tree), so a deletion also removes the files, not just the index entry.
 
-Deletions are **staged**: nothing is removed until **Delete & publish**
-commits them, and **Preview plan** shows exactly which files go. One commit can
-carry several deletions at once. **Reset** throws the staged changes away and
-re-reads the branch.
+The arrows reorder content the way the site reads it:
+
+- **Tracks** — the whole release is renumbered, because `site.js` sorts a
+  release by `trackNumber`. Singles have no track number, so their arrows are
+  disabled.
+- **Photos and videos** — the order in `epk-media.json`, which is the order the
+  EPK slideshow plays.
+- **Links** — the order inside each group in `links.json`.
+
+Release order on the site comes from the release dates (newest first), not from
+the catalogue file, so releases themselves are not draggable — change a release
+date to move it.
+
+Deletions are **staged**: nothing is removed until **Publish changes** commits
+them, and **Preview plan** shows exactly which files go. One commit can carry
+several changes at once. **Reset** throws the staged changes away and re-reads
+the branch.
 
 - **Release** — every file under `Music/<Category>/<Release>/` plus its
   catalogue entries.
