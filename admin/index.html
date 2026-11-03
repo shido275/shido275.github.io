@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="../style.css">
     <link rel="stylesheet" href="admin.css">
     <link rel="stylesheet" href="manage.css">
+    <link rel="stylesheet" href="lock.css">
 </head>
 
 <body class="admin">
@@ -45,7 +46,7 @@
                 <span>All Links</span><small>Directory</small>
             </button>
             <button class="admin-nav__item" type="button" data-view="manage">
-                <span>Manage</span><small>Delete items</small>
+                <span>Manage</span><small>Reorder and delete</small>
             </button>
             <button class="admin-nav__item" type="button" data-view="settings">
                 <span>Connect</span><small>Token</small>
@@ -53,9 +54,6 @@
         </nav>
 
         <main class="admin-main">
-            <!-- ==============================================
-                 OVERVIEW
-                 ============================================== -->
             <section class="admin-view is-active" id="view-overview" aria-labelledby="overview-title">
                 <div class="panel-head">
                     <p class="eyebrow">Dashboard</p>
@@ -88,9 +86,6 @@
                 </div>
             </section>
 
-            <!-- ==============================================
-                 RELEASES
-                 ============================================== -->
             <section class="admin-view" id="view-releases" aria-labelledby="release-heading">
                 <div class="panel-head">
                     <p class="eyebrow">Music</p>
@@ -202,9 +197,6 @@
                 </div>
             </section>
 
-            <!-- ==============================================
-                 PHOTOS
-                 ============================================== -->
             <section class="admin-view" id="view-photos" aria-labelledby="photos-heading">
                 <div class="panel-head">
                     <p class="eyebrow">EPK</p>
@@ -246,9 +238,6 @@
                 </div>
             </section>
 
-            <!-- ==============================================
-                 VIDEOS
-                 ============================================== -->
             <section class="admin-view" id="view-videos" aria-labelledby="videos-heading">
                 <div class="panel-head">
                     <p class="eyebrow">EPK</p>
@@ -312,9 +301,6 @@
                 </div>
             </section>
 
-            <!-- ==============================================
-                 LINKS
-                 ============================================== -->
             <section class="admin-view" id="view-links" aria-labelledby="links-heading">
                 <div class="panel-head">
                     <p class="eyebrow">Directory</p>
@@ -395,16 +381,13 @@
                 </div>
             </section>
 
-            <!-- ==============================================
-                 MANAGE
-                 ============================================== -->
             <section class="admin-view" id="view-manage" aria-labelledby="manage-heading">
                 <div class="panel-head">
-                    <p class="eyebrow">Clean up</p>
-                    <h1 id="manage-heading">Manage &amp; delete</h1>
-                    <p class="hint">Everything already published, in one list. Deleting removes the entry and, for
-                        uploads, the file itself. Nothing changes until the commit lands, and the plan can be
-                        previewed first.</p>
+                    <p class="eyebrow">Reorder and delete</p>
+                    <h1 id="manage-heading">Manage content</h1>
+                    <p class="hint">Everything already published, in one list. Use the arrows to reorder tracks, photos,
+                        videos and links; delete to remove an entry and, for uploads, the file itself. Nothing changes
+                        until the commit lands, and the plan can be previewed first.</p>
                 </div>
 
                 <div class="panel">
@@ -447,7 +430,7 @@
                 <div class="panel">
                     <div class="panel-head">
                         <p class="eyebrow">Publish</p>
-                        <h2>Commit deletions</h2>
+                        <h2>Commit changes</h2>
                     </div>
                     <div class="publish-grid">
                         <label>Commit message<input id="manage-message" autocomplete="off"></label>
@@ -457,21 +440,19 @@
                     </div>
                     <div class="row">
                         <button class="button" type="button" id="manage-plan">Preview plan</button>
-                        <button class="button danger" type="button" id="manage-publish">Delete &amp; publish</button>
+                        <button class="button primary" type="button" id="manage-publish">Publish changes</button>
                     </div>
                     <div id="manage-output" aria-live="polite"></div>
                 </div>
             </section>
 
-            <!-- ==============================================
-                 CONNECT
-                 ============================================== -->
             <section class="admin-view" id="view-settings" aria-labelledby="connect-heading">
                 <div class="panel-head">
                     <p class="eyebrow">Setup</p>
                     <h1 id="connect-heading">Connect</h1>
                     <p class="hint">A fine-grained token scoped to this repository with <strong>Contents: Read and
-                            write</strong>. It stays in this browser and is sent only to <code>api.github.com</code>.</p>
+                            write</strong>. It stays in this browser, sealed by your passcode, and is sent only to
+                        <code>api.github.com</code>.</p>
                 </div>
 
                 <div class="panel">
@@ -508,6 +489,7 @@
         <pre class="log" id="log" aria-live="polite"></pre>
     </div>
 
+    <script src="lock.js"></script>
     <script src="import-core.js"></script>
     <script src="app.js"></script>
     <script src="media.js"></script>
