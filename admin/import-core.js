@@ -1,8 +1,8 @@
 /* ==========================================================================
-   Release importer core - pure functions. No DOM, no network.
-   Shared by the browser app (window.ReleaseImport) and the Node tests.
-   Mirrors generate-manifest.js so an imported release and a scanned release
-   produce the same manifest entries.
+   Admin core - pure functions. No DOM, no network.
+   Shared by the browser dashboard (window.ReleaseImport) and the Node tests.
+   Covers three tools: release import, EPK media (photos + videos) and the
+   All Links directory. Mirrors generate-manifest.js for catalogue entries.
    ========================================================================== */
 (function (global, factory) {
     "use strict";
@@ -13,12 +13,22 @@
     "use strict";
 
     const AUDIO_EXTENSIONS = [".mp3", ".wav", ".m4a", ".flac"];
-    const IMAGE_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp"];
+    const IMAGE_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp", ".svg"];
+    const VIDEO_EXTENSIONS = [".mp4", ".webm", ".mov", ".m4v"];
     const CATEGORIES = ["Singles", "EPs", "Albums and Mixtapes", "Compilations"];
     const MANIFEST_PATH = "music-manifest.json";
+    const MEDIA_PATH = "epk-media.json";
+    const LINKS_PATH = "links.json";
+    const PHOTO_DIR = "assets/photos";
+    const VIDEO_DIR = "assets/videos";
+    const DEFAULT_ARTIST = "X/i\\D";
+    const DEFAULT_LABEL = "FAKE Entertainment";
+    const VIDEO_KINDS = ["Music Video", "Performance", "Behind the Scenes", "Interview"];
+    const LINK_GROUPS = ["featured", "platforms", "socials", "business"];
     // GitHub rejects very large base64 blob payloads; warn well before that.
     const MAX_FILE_BYTES = 45 * 1024 * 1024;
-    const DEFAULT_ARTIST = "X/i\\D";
+    // Pages is not a video host; keep uploads for short clips only.
+    const MAX_VIDEO_BYTES = 90 * 1024 * 1024;
 
     function ext(name) {
         const i = String(name).lastIndexOf(".");
@@ -36,6 +46,10 @@
 
     function isImage(name) {
         return IMAGE_EXTENSIONS.includes(ext(name));
+    }
+
+    function isVideo(name) {
+        return VIDEO_EXTENSIONS.includes(ext(name));
     }
 
     function prettyName(fileName) {
@@ -83,14 +97,89 @@
         return String(a).localeCompare(String(b), undefined, { numeric: true, sensitivity: "base" });
     }
 
+    function formatBytes(bytes) {
+        const value = Number(bytes) || 0;
+        if (value < 1024) return `${value} B`;
+        if (value < 1024 * 1024) return `${(value / 1024).toFixed(1)} KB`;
+        return `${(value / (1024 * 1024)).toFixed(1)} MB`;
+    }
+
+    function clean(value) {
+        return String(value == null ? "" : value).replace(/\s+/g, " ").trim();
+    }
+
+    // "Me, You; Them" -> ["Me", "You", "Them"] so the site can join it back.
+    function creditList(value) {
+        if (Array.isArray(value)) return value.map(clean).filter(Boolean);
+        return String(value == null ? "" : value)
+            .split(/[,;\n]/)
+            .map(clean)
+            .filter(Boolean);
+    }
+
+    /* ------------------------------------------------------------------ links */
+
+    // Only links that cannot execute script are accepted.
+    function isSafeUrl(value) {
+        const url = clean(value);
+        if (!url) return false;
+        if (/^(https?:|mailto:|tel:)/i.test(url)) return true;
+        if (url.startsWith("#") || url.startsWith("/") || url.startsWith("./")) return true;
+        // Bare domains like example.com/artist are common in hand-typed links.
+        return /^[\w-]+(\.[\w-]+)+(\/\S*)?$/.test(url) && !/^\s*javascript:/i.test(url);
+    }
+
+    function normalizeUrl(value) {
+        const url = clean(value);
+        if (!url) return "";
+        if (/^(https?:|mailto:|tel:)/i.test(url) || url.startsWith("#") || url.startsWith("/") || url.startsWith("./")) return url;
+        if (/^[\w-]+(\.[\w-]+)+/.test(url)) return `https://${url}`;
+        return url;
+    }
+
+    /* ------------------------------------------------------------ release data */
+
+    function yearOf(date) {
+        const value = String(date || "");
+        return /^\d{4}/.test(value) ? value.slice(0, 4) : undefined;
+    }
+
+    function albumLabel(category, release, album) {
+        if (album && album.trim()) return album.trim();
+        return category === "Singles" ? "Single" : release;
+    }
+
+    /* Album-level credits. The site's release modal reads exactly these keys
+       from <release>/info.json, so the importer now writes that file too. */
+    function buildReleaseInfo(form, coverName) {
+        const releaseDate = form.date || new Date().toISOString().slice(0, 10);
+        const info = {
+            title: albumLabel(form.category, form.release, form.album),
+            artist: clean(form.artist) || DEFAULT_ARTIST,
+            album: albumLabel(form.category, form.release, form.album),
+            category: form.category,
+            releaseDate,
+            year: yearOf(releaseDate),
+            description: clean(form.description),
+            performers: creditList(form.performers),
+            producers: creditList(form.producers),
+            writers: creditList(form.writers),
+            label: clean(form.label) || DEFAULT_LABEL,
+            genre: clean(form.genre)
+        };
+        if (form.explicit) info.explicit = true;
+        if (coverName) info.cover = coverName;
+        return info;
+    }
+
     function buildEntries(options) {
         const { category, release, album, artist, date, tracks, coverName } = options;
         if (!tracks || !tracks.length) throw new Error("Add at least one audio file.");
 
         const folder = releaseFolder(category, release);
         const releaseDate = date || new Date().toISOString().slice(0, 10);
-        const albumName = album && album.trim() ? album.trim() : (category === "Singles" ? "Single" : release);
-        const year = /^\d{4}/.test(releaseDate) ? releaseDate.slice(0, 4) : undefined;
+        const albumName = albumLabel(category, release, album);
+        const year = yearOf(releaseDate);
         const coverUrl = coverName ? `${folder}/${safeSegment(coverName)}` : "";
 
         return tracks.map((track, index) => {
@@ -166,14 +255,7 @@
         return used.length ? Math.max(...used) + 1 : 1;
     }
 
-    function formatBytes(bytes) {
-        const value = Number(bytes) || 0;
-        if (value < 1024) return `${value} B`;
-        if (value < 1024 * 1024) return `${(value / 1024).toFixed(1)} KB`;
-        return `${(value / (1024 * 1024)).toFixed(1)} MB`;
-    }
-
-    /* Build everything the import needs: file writes, manifest, warnings.
+    /* Build everything the import needs: file writes, manifest, credits, warnings.
        Deliberately side-effect free so it can be tested and previewed. */
     function planImport(options) {
         const { files, coverFile, form, existingManifest } = options;
@@ -201,6 +283,12 @@
             coverName
         });
         const folder = releaseFolder(form.category, form.release);
+        const info = buildReleaseInfo(form, coverName);
+
+        if (!info.description) warnings.push("No release description - the site's Credits panel will read as empty.");
+        if (!info.performers.length && !info.producers.length && !info.writers.length) {
+            warnings.push("No credits filled in - the site will show N/A for performers, producers and writers.");
+        }
 
         const writes = [];
         audioFiles.forEach((file, index) => {
@@ -224,6 +312,11 @@
         if (coverFile) {
             writes.push({ path: assertRepoPath(`${folder}/${safeSegment(coverFile.name)}`), kind: "cover", file: coverFile });
         }
+        writes.push({
+            path: assertRepoPath(`${folder}/info.json`),
+            kind: "info",
+            text: `${JSON.stringify(info, null, 2)}\n`
+        });
 
         const merged = mergeManifest(existingManifest, entries);
         writes.push({
@@ -251,6 +344,7 @@
         return {
             folder,
             entries,
+            info,
             writes,
             manifest: merged.manifest,
             added: merged.added,
@@ -262,9 +356,247 @@
         };
     }
 
+    /* ----------------------------------------------------------------- media */
+
+    /* Pull a YouTube playlist or video id out of any URL shape people paste. */
+    function parseYouTube(url) {
+        const value = clean(url);
+        if (!value) return null;
+        let list = "";
+        let id = "";
+        const listMatch = value.match(/[?&]list=([\w-]+)/);
+        if (listMatch) list = listMatch[1];
+        const idMatch = value.match(/(?:v=|\/embed\/|youtu\.be\/|\/shorts\/|\/live\/)([\w-]{11})/);
+        if (idMatch) id = idMatch[1];
+        if (!id && /^[\w-]{11}$/.test(value)) id = value;
+        if (!list && !id) return null;
+        return list && (!id || value.includes("playlist") || /[?&]list=/.test(value)) ? { playlist: list, id } : { id, playlist: "" };
+    }
+
+    function parseVimeo(url) {
+        const value = clean(url);
+        const match = value.match(/vimeo\.com\/(?:video\/)?(\d+)/);
+        return match ? match[1] : "";
+    }
+
+    /* Photos and videos for the EPK. Uploads go under assets/, everything is
+       indexed in one epk-media.json the site reads at runtime. */
+    function planMedia(options) {
+        const { photos, videos, existing } = options || {};
+        const previous = existing && typeof existing === "object" ? existing : {};
+        const warnings = [];
+        const usedNames = new Set();
+        const writes = [];
+
+        const uniqueName = (file, dir, prefix) => {
+            const name = `${prefix ? `${prefix}-` : ""}${slugify(baseName(file.name))}${ext(file.name)}`;
+            let candidate = name;
+            let counter = 2;
+            while (usedNames.has(`${dir}/${candidate}`.toLowerCase())) {
+                candidate = `${prefix ? `${prefix}-` : ""}${slugify(baseName(file.name))}-${counter}${ext(file.name)}`;
+                counter += 1;
+            }
+            usedNames.add(`${dir}/${candidate}`.toLowerCase());
+            return candidate;
+        };
+
+        const photoList = [];
+        (photos || []).forEach((photo, index) => {
+            let src = clean(photo.src || photo.url || "");
+            if (photo.file) {
+                if (!isImage(photo.file.name) && ext(photo.file.name) !== ".svg") {
+                    warnings.push(`${photo.file.name} is not an image (.jpg, .png, .webp, .svg).`);
+                    return;
+                }
+                if (photo.file.size > MAX_FILE_BYTES) {
+                    warnings.push(`${photo.file.name} is ${formatBytes(photo.file.size)} - too large for GitHub.`);
+                    return;
+                }
+                const name = uniqueName(photo.file, PHOTO_DIR, "photo");
+                const path = assertRepoPath(`${PHOTO_DIR}/${name}`);
+                writes.push({ path, kind: "photo", file: photo.file });
+                src = path;
+            }
+            if (!src) return;
+            const caption = clean(photo.caption);
+            photoList.push({
+                src,
+                caption,
+                alt: clean(photo.alt) || caption || `X/i\\D photo ${index + 1}`,
+                credit: clean(photo.credit)
+            });
+        });
+
+        const videoList = [];
+        (videos || []).forEach((video, index) => {
+            const title = clean(video.title) || `Video ${index + 1}`;
+            const kind = VIDEO_KINDS.includes(video.kind) ? video.kind : VIDEO_KINDS[0];
+            const entry = {
+                title,
+                kind,
+                venue: clean(video.venue),
+                date: clean(video.date),
+                note: clean(video.note)
+            };
+
+            if (video.file) {
+                if (!isVideo(video.file.name)) {
+                    warnings.push(`${video.file.name} is not a video (.mp4, .webm, .mov).`);
+                    return;
+                }
+                if (video.file.size > MAX_VIDEO_BYTES) {
+                    warnings.push(`${video.file.name} is ${formatBytes(video.file.size)} - GitHub Pages is not a good host for videos this big. Upload to YouTube and paste the link instead.`);
+                }
+                const name = uniqueName(video.file, VIDEO_DIR, "video");
+                const path = assertRepoPath(`${VIDEO_DIR}/${name}`);
+                writes.push({ path, kind: "video", file: video.file });
+                entry.source = "file";
+                entry.url = path;
+                videoList.push(entry);
+                return;
+            }
+
+            const url = clean(video.url);
+            if (!url) {
+                warnings.push(`"${title}" has no video URL or file.`);
+                return;
+            }
+            const youtube = parseYouTube(url);
+            if (youtube || /youtube\.com|youtu\.be/i.test(url)) {
+                if (!youtube) {
+                    warnings.push(`Could not read a video or playlist id from "${url}".`);
+                    return;
+                }
+                entry.source = youtube.playlist ? "youtube-playlist" : "youtube";
+                if (youtube.playlist) entry.playlist = youtube.playlist;
+                if (youtube.id) entry.videoId = youtube.id;
+                entry.url = url;
+                videoList.push(entry);
+                return;
+            }
+            const vimeo = parseVimeo(url);
+            if (vimeo) {
+                entry.source = "vimeo";
+                entry.videoId = vimeo;
+                entry.url = url;
+                videoList.push(entry);
+                return;
+            }
+            warnings.push(`"${title}" is not a YouTube or Vimeo link - paste a hosted link or choose a file.`);
+        });
+
+        const slideshow = {
+            autoplay: previous.slideshow && previous.slideshow.autoplay === false ? false : true,
+            interval: Number(previous.slideshow && previous.slideshow.interval) || 6000
+        };
+
+        const doc = { photos: photoList, videos: videoList, slideshow };
+        writes.push({ path: MEDIA_PATH, kind: "media-index", text: `${JSON.stringify(doc, null, 2)}\n` });
+
+        if (!photoList.length) warnings.push("No photos queued - the EPK photo slideshow will keep its built-in fallback.");
+        if (!videoList.length) warnings.push("No videos queued - the EPK video slideshow will keep its built-in fallback.");
+
+        return {
+            writes,
+            doc,
+            photoCount: photoList.length,
+            videoCount: videoList.length,
+            warnings,
+            totalBytes: writes.reduce((sum, write) => sum + (write.file ? write.file.size : (write.text ? write.text.length : 0)), 0)
+        };
+    }
+
+    function readMedia(source) {
+        if (!source || typeof source !== "object") return { photos: [], videos: [], slideshow: null };
+        return {
+            photos: Array.isArray(source.photos) ? source.photos : [],
+            videos: Array.isArray(source.videos) ? source.videos : [],
+            slideshow: source.slideshow || null
+        };
+    }
+
+    /* ------------------------------------------------------------ link tools */
+
+    const ACCENTS = ["cyan", "gold", "rose", "green"];
+
+    function buildLinksDoc(input) {
+        const source = input || {};
+        const doc = {};
+        const warnings = [];
+
+        const take = (list, mapper, group) => {
+            const out = [];
+            (Array.isArray(list) ? list : []).forEach((item, index) => {
+                const label = clean(item && item.label);
+                const url = clean(item && item.url);
+                if (!label && !url) return;
+                if (!label) {
+                    warnings.push(`${group} entry ${index + 1} has a URL but no label - dropped.`);
+                    return;
+                }
+                if (!url) {
+                    warnings.push(`"${label}" has no URL - dropped.`);
+                    return;
+                }
+                if (!isSafeUrl(url)) {
+                    warnings.push(`"${label}" points at an unsupported URL (${url}) - dropped. Only http(s), mailto:, #routes and relative paths are allowed.`);
+                    return;
+                }
+                out.push(mapper(item, label, normalizeUrl(url)));
+            });
+            return out;
+        };
+
+        doc.featured = take(source.featured, (item, label, url) => {
+            const entry = { label, url, description: clean(item.description) };
+            const accent = clean(item.accent).toLowerCase();
+            if (ACCENTS.includes(accent)) entry.accent = accent;
+            return entry;
+        }, "Featured");
+
+        doc.platforms = take(source.platforms, (item, label, url) => ({ label, url }), "Platforms");
+
+        doc.socials = take(source.socials, (item, label, url) => {
+            const entry = { label, url };
+            const handle = clean(item.handle);
+            if (handle) entry.handle = handle;
+            return entry;
+        }, "Socials");
+
+        doc.business = take(source.business, (item, label, url) => ({ label, url }), "Business");
+
+        doc.quickSocials = take(source.quickSocials, (item, label, url) => ({ label, url }), "Quick socials");
+
+        return { doc, warnings };
+    }
+
+    function planLinks(options) {
+        const { doc } = options || {};
+        const built = buildLinksDoc(doc || {});
+        const total = LINK_GROUPS.reduce((sum, group) => sum + built.doc[group].length, 0) + built.doc.quickSocials.length;
+        const warnings = [...built.warnings];
+        if (!LINK_GROUPS.some(group => built.doc[group].length)) {
+            warnings.push("Every group is empty - the All Links page will keep its built-in fallback list.");
+        }
+        return {
+            writes: [{ path: LINKS_PATH, kind: "links", text: `${JSON.stringify(built.doc, null, 2)}\n` }],
+            doc: built.doc,
+            linkCount: total,
+            warnings,
+            totalBytes: JSON.stringify(built.doc, null, 2).length + 1
+        };
+    }
+
+    /* --------------------------------------------------------------- git bits */
+
     function suggestBranchName(release) {
         const stamp = new Date().toISOString().slice(0, 10);
         return `imports/${slugify(release)}-${stamp}`;
+    }
+
+    function suggestToolBranch(tool) {
+        const stamp = new Date().toISOString().slice(0, 10);
+        return `admin/${slugify(tool)}-${stamp}`;
     }
 
     function commitMessage(form, trackCount) {
@@ -275,28 +607,53 @@
     return {
         AUDIO_EXTENSIONS,
         IMAGE_EXTENSIONS,
+        VIDEO_EXTENSIONS,
         CATEGORIES,
         MANIFEST_PATH,
+        MEDIA_PATH,
+        LINKS_PATH,
+        PHOTO_DIR,
+        VIDEO_DIR,
         MAX_FILE_BYTES,
+        MAX_VIDEO_BYTES,
         DEFAULT_ARTIST,
+        DEFAULT_LABEL,
+        VIDEO_KINDS,
+        LINK_GROUPS,
+        ACCENTS,
         ext,
         baseName,
         isAudio,
         isImage,
+        isVideo,
         prettyName,
         slugify,
         safeSegment,
         assertRepoPath,
         releaseFolder,
         naturalCompare,
+        formatBytes,
+        clean,
+        creditList,
+        isSafeUrl,
+        normalizeUrl,
+        yearOf,
+        albumLabel,
+        buildReleaseInfo,
         buildEntries,
         sortManifest,
         mergeManifest,
         listReleases,
         nextTrackNumber,
-        formatBytes,
         planImport,
+        parseYouTube,
+        parseVimeo,
+        planMedia,
+        readMedia,
+        buildLinksDoc,
+        planLinks,
         suggestBranchName,
+        suggestToolBranch,
         commitMessage
     };
 });
