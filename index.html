@@ -6,13 +6,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>X/i\D | Homebase</title>
     <meta name="description" content="The official homebase for X/i\D - Artist, Producer, and Beats licensing.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
-    <!-- Cyberpunk Grid and Background Elements -->
-    <div class="cyber-grid"></div>
-    <div class="cyber-scanlines"></div>
+    <!-- Film grain and scan drift -->
+    <div class="noise-layer"></div>
+    <div class="scan-layer"></div>
 
     <header class="site-header">
         <a class="brand" href="#/home" aria-label="X/i\D home">X/i\D</a>
@@ -160,7 +162,7 @@
                     <p class="eyebrow">Official links</p>
                     <h1>X/i\D</h1>
                     <p class="lead">Music, beats, videos, booking, livestreams, submissions, and socials in one place.</p>
-                    <div class="quick-socials" aria-label="Social links">
+                    <div class="quick-socials" id="links-quick" aria-label="Social links">
                         <a href="https://www.instagram.com/maoriboishido">Instagram</a>
                         <a href="https://www.tiktok.com/@xidmusic">TikTok</a>
                         <a href="https://www.youtube.com/@xidmusic">YouTube</a>
@@ -168,7 +170,7 @@
                     </div>
                 </section>
 
-                <section class="link-stack section-band" aria-label="Featured links">
+                <section class="link-stack section-band" id="links-featured" aria-label="Featured links">
                     <a class="mega-link accent-cyan" href="#/home#music">
                         <span>Listen Now</span>
                         <small>Singles, EPs, albums, mixtapes, and compilations</small>
@@ -192,7 +194,7 @@
                         <p class="eyebrow">Platforms</p>
                         <h2>Music and Video</h2>
                     </div>
-                    <div class="link-grid compact-links">
+                    <div class="link-grid compact-links" id="links-platforms">
                         <a class="link-tile" href="https://open.spotify.com/artist/6FfLMEo15eD7S10n3oDG8a">Spotify</a>
                         <a class="link-tile" href="https://music.apple.com/us/artist/x-i-d/1626477785">Apple Music</a>
                         <a class="link-tile" href="https://www.youtube.com/@xidmusic">YouTube Music</a>
@@ -210,7 +212,7 @@
                         <p class="eyebrow">Socials</p>
                         <h2>Follow</h2>
                     </div>
-                    <div class="social-grid">
+                    <div class="social-grid" id="links-social">
                         <a href="https://www.instagram.com/maoriboishido"><strong>Instagram</strong><span>@maoriboishido</span></a>
                         <a href="https://www.tiktok.com/@xidmusic"><strong>TikTok</strong><span>@xidmusic</span></a>
                         <a href="https://x.com/etnadnisamok"><strong>X / Twitter</strong><span>@etnadnisamok</span></a>
@@ -228,7 +230,7 @@
                         <p class="eyebrow">Business</p>
                         <h2>Booking, Press, and Support</h2>
                     </div>
-                    <div class="link-grid compact-links">
+                    <div class="link-grid compact-links" id="links-business">
                         <a class="link-tile" href="#/epk">EPK / Press Kit</a>
                         <a class="link-tile" href="mailto:shidomusic275@gmail.com">Email Booking</a>
                         <a class="link-tile" href="#">Merch Store</a>
@@ -271,10 +273,11 @@
                     <p class="eyebrow">Assets</p>
                     <h2>Photos</h2>
                 </div>
-                <div class="media-grid">
-                    <figure><img src="assets/press-photo-1.png" alt="X/i\D press photo 1"><figcaption>Studio Portrait</figcaption></figure>
-                    <figure><img src="assets/press-photo-2.png" alt="X/i\D press photo 2"><figcaption>Live Holographic Show</figcaption></figure>
-                    <figure><img src="assets/press-photo-3.png" alt="X/i\D press photo 3"><figcaption>Synthesizer Production setup</figcaption></figure>
+                <!-- Replaced at runtime by the photo slideshow from epk-media.json; this markup is the no-JS fallback. -->
+                <div class="media-grid" id="epk-photos">
+                    <figure><img src="assets/press-photo-1.svg" alt="X/i\D press photo 1"><figcaption>Studio Portrait</figcaption></figure>
+                    <figure><img src="assets/press-photo-2.svg" alt="X/i\D press photo 2"><figcaption>Live Holographic Show</figcaption></figure>
+                    <figure><img src="assets/press-photo-3.svg" alt="X/i\D press photo 3"><figcaption>Synthesizer Production setup</figcaption></figure>
                 </div>
             </section>
 
@@ -283,7 +286,8 @@
                     <p class="eyebrow">Video</p>
                     <h2>Music Videos and Performances</h2>
                 </div>
-                <div class="embed-shell wide">
+                <!-- Replaced at runtime by the video slideshow from epk-media.json; this playlist is the no-JS fallback. -->
+                <div class="embed-shell wide" id="epk-videos">
                     <iframe src="https://www.youtube.com/embed/videoseries?list=PL_JkO-8YJpHzbTLOgN46q0W_3Z6D7hFvB" title="YouTube video player" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
                 </div>
             </section>
@@ -477,9 +481,9 @@
     <!-- System initialize click screen overlay (necessary for audio context visualizer auto-play permissions) -->
     <div id="audio-init-overlay" class="audio-init-overlay">
         <div class="init-card">
-            <h2>INITIALIZING HUD SYSTEM</h2>
-            <p>Accessing telemetry modules and catalog databases...</p>
-            <button id="audio-init-btn" class="button primary">Initialize Core</button>
+            <h2>X/i\D</h2>
+            <p>Sound on. Nothing else.</p>
+            <button id="audio-init-btn" class="button primary">Enter</button>
         </div>
     </div>
 
@@ -490,6 +494,7 @@
     <!-- Audio Element managed by Javascript -->
     <audio id="main-audio" preload="metadata" crossorigin="anonymous"></audio>
 
+    <script src="epk-media.js"></script>
     <script src="site.js"></script>
 </body>
 

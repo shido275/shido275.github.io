@@ -1,0 +1,38 @@
+{
+  "photos": [
+    {
+      "src": "assets/press-photo-1.svg",
+      "caption": "Studio Portrait",
+      "alt": "X/i\\D studio portrait",
+      "credit": ""
+    },
+    {
+      "src": "assets/press-photo-2.svg",
+      "caption": "Live Holographic Show",
+      "alt": "X/i\\D live holographic show",
+      "credit": ""
+    },
+    {
+      "src": "assets/press-photo-3.svg",
+      "caption": "Synthesizer Production Setup",
+      "alt": "X/i\\D synthesizer production setup",
+      "credit": ""
+    }
+  ],
+  "videos": [
+    {
+      "title": "Official Videos & Performances",
+      "kind": "Music Video",
+      "venue": "",
+      "date": "",
+      "note": "Full playlist",
+      "source": "youtube-playlist",
+      "playlist": "PL_JkO-8YJpHzbTLOgN46q0W_3Z6D7hFvB",
+      "url": "https://www.youtube.com/playlist?list=PL_JkO-8YJpHzbTLOgN46q0W_3Z6D7hFvB"
+    }
+  ],
+  "slideshow": {
+    "autoplay": true,
+    "interval": 6000
+  }
+}
