@@ -1,0 +1,217 @@
+
+/* ==========================================================================
+   Links page
+   ========================================================================== */
+
+.links-page {
+    width: min(760px, calc(100% - 2rem));
+}
+
+.all-links-hero {
+    min-height: auto;
+    text-align: center;
+    border-top: 0;
+    padding-bottom: 2.5rem;
+}
+
+.all-links-hero .eyebrow {
+    justify-content: center;
+}
+
+.all-links-hero h1 {
+    margin: 0 0 0.75rem;
+    font-family: var(--display);
+    font-size: clamp(3.5rem, 13vw, 7rem);
+    line-height: 0.85;
+    font-weight: 400;
+    text-transform: uppercase;
+    color: var(--text);
+    background: none;
+    -webkit-text-fill-color: currentColor;
+    filter: none;
+}
+
+.all-links-hero .lead {
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.profile-avatar {
+    width: min(150px, 40vw);
+    aspect-ratio: 1;
+    margin: 0 auto 1.75rem;
+    border: 1px solid rgba(237, 235, 230, 0.25);
+    border-radius: 50%;
+    object-fit: cover;
+    filter: grayscale(1) contrast(1.15);
+    transform: translateZ(0);
+    backface-visibility: hidden;
+}
+
+.quick-socials,
+.link-stack,
+.social-grid {
+    display: grid;
+    gap: 0.6rem;
+}
+
+.quick-socials {
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    margin-top: 2rem;
+}
+
+.quick-socials a,
+.social-grid a {
+    padding: 0.9rem 1rem;
+    color: var(--text);
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--line);
+    border-radius: 0;
+    text-transform: uppercase;
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.22em;
+    text-decoration: none;
+}
+
+.quick-socials a:hover,
+.social-grid a:hover {
+    color: #050505;
+    background: var(--text);
+    border-color: var(--text);
+}
+
+.mega-link {
+    display: grid;
+    gap: 0.2rem;
+    padding: 1.35rem 1.5rem;
+    color: var(--text);
+    background: rgba(255, 255, 255, 0.015);
+    border: 1px solid var(--line);
+    border-left: 1px solid rgba(237, 235, 230, 0.25);
+    border-radius: 0;
+    text-decoration: none;
+    clip-path: none;
+}
+
+.mega-link span {
+    font-family: var(--display);
+    font-size: 1.5rem;
+    font-weight: 400;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+}
+
+.mega-link small,
+.social-grid span {
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    line-height: 1.7;
+}
+
+.accent-cyan { border-left-color: rgba(237, 235, 230, 0.85); }
+.accent-gold { border-left-color: var(--gold); }
+.accent-rose { border-left-color: var(--blood); }
+.accent-green { border-left-color: var(--green); }
+
+.mega-link:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(237, 235, 230, 0.3);
+    border-left-color: var(--blood);
+}
+
+.accent-rose:hover { border-left-color: var(--blood); }
+
+.compact-links {
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+}
+
+.link-tile {
+    width: 100%;
+}
+
+.featured-link {
+    border-color: rgba(237, 235, 230, 0.4);
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.social-grid {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.social-grid strong,
+.social-grid span {
+    display: block;
+}
+
+.social-grid strong {
+    font-family: var(--heading);
+    font-size: 1.15rem;
+    font-weight: 400;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: var(--text);
+}
+
+.social-grid a:hover strong {
+    color: #050505;
+}
+
+:focus-visible {
+    outline: 1px solid var(--text);
+    outline-offset: 3px;
+}
+
+.contact-card {
+    min-height: 8rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    text-align: center;
+    text-decoration: none;
+    overflow-wrap: anywhere;
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    letter-spacing: 0.12em;
+    color: var(--text);
+    border: 1px solid var(--line);
+}
+
+.contact-card:hover {
+    background: var(--text);
+    color: #050505;
+    border-color: var(--text);
+}
+
+@media (max-width: 560px) {
+    main,
+    .links-page {
+        width: min(100% - 1.25rem, 1180px);
+        padding-top: 1.5rem;
+    }
+
+    .section-band {
+        padding: 1.5rem 0;
+    }
+
+    .site-nav a {
+        padding-inline: 0.6rem;
+        font-size: 0.6rem;
+    }
+
+    .link-grid,
+    .compact-links,
+    .quick-socials,
+    .social-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .hero h1,
+    .all-links-hero h1 {
+        font-size: clamp(3rem, 18vw, 5rem);
+    }
+}
