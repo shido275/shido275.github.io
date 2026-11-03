@@ -14,6 +14,7 @@ Live at **https://shido275.github.io/admin/**
 | **Photos** | `assets/photos/*`, `epk-media.json` | EPK → Photos slideshow |
 | **Videos** | `assets/videos/*`, `epk-media.json` | EPK → Music Videos and Performances |
 | **All Links** | `links.json` | `#/links` directory |
+| **Manage** | deletes releases, tracks, EPK media, links | everything above |
 
 Every tool previews its plan first (files, sizes, warnings) and then commits
 blobs → tree → commit → ref in one atomic commit. A failure leaves the branch
@@ -68,6 +69,33 @@ Five groups — Featured, Platforms, Socials, Business and Hero socials — rend
 into `#/links`. Empty groups keep the built-in markup for that section. Only
 `https://`, `mailto:`, `tel:`, `#` routes and relative paths are accepted;
 `javascript:` links are dropped with a warning.
+
+## Manage and delete
+
+The **Manage** tool lists everything already published — releases, their
+tracks, EPK photos, EPK videos and every link group — and deletes it. It reads
+the branch once (catalogue, `epk-media.json`, `links.json` and the full file
+tree), so a deletion also removes the files, not just the index entry.
+
+Deletions are **staged**: nothing is removed until **Delete & publish**
+commits them, and **Preview plan** shows exactly which files go. One commit can
+carry several deletions at once. **Reset** throws the staged changes away and
+re-reads the branch.
+
+- **Release** — every file under `Music/<Category>/<Release>/` plus its
+  catalogue entries.
+- **Track** — the audio file, its metadata JSON, and its catalogue entry; other
+  tracks keep their numbers.
+- **Photo / video** — the entry in `epk-media.json`, and the file itself when it
+  was uploaded to `assets/photos/` or `assets/videos/`.
+- **Link** — the entry in `links.json`. Emptying a group hands that section back
+  to the site's built-in list.
+
+Deletion is restricted to `Music/`, `assets/photos/` and `assets/videos/`. A
+photo or video whose file sits somewhere else (for example the hand-written
+`assets/press-photo-1.svg` fallbacks) is dropped from the slideshow but its file
+is kept, because the static markup still points at it; the tool marks those
+rows *kept*.
 
 ## Tests
 

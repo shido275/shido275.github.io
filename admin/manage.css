@@ -1,0 +1,139 @@
+/* ==========================================================================
+   Manage tool - delete rows for releases, tracks, EPK media and links.
+   Loaded after admin.css so it only adds to the dashboard's existing look.
+   ========================================================================== */
+
+.button.danger {
+    border-color: rgba(214, 69, 69, 0.5);
+    color: #ff9d9d;
+}
+
+.button.danger:hover,
+.button.danger:focus-visible {
+    border-color: #ff6b6b;
+    color: #fff;
+    background: rgba(214, 69, 69, 0.18);
+}
+
+.manage-list {
+    display: grid;
+    gap: 0.6rem;
+}
+
+.manage-card {
+    border: 1px solid rgba(237, 235, 230, 0.1);
+    background: rgba(255, 255, 255, 0.015);
+    padding: 0.6rem 0.7rem;
+}
+
+.manage-card__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.manage-card__title {
+    display: grid;
+    gap: 0.15rem;
+    min-width: 0;
+}
+
+.manage-card__title strong {
+    font-size: 0.95rem;
+}
+
+.manage-card__title small {
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+
+.manage-card details {
+    margin-top: 0.5rem;
+}
+
+.manage-card summary {
+    cursor: pointer;
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+
+.manage-tracks {
+    list-style: none;
+    margin: 0.5rem 0 0;
+    padding: 0;
+    display: grid;
+    gap: 0.25rem;
+}
+
+.manage-tracks li {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) minmax(0, 1.2fr) auto;
+    gap: 0.5rem;
+    align-items: center;
+    padding: 0.25rem 0;
+    border-bottom: 1px solid rgba(237, 235, 230, 0.06);
+}
+
+.manage-tracks__num {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--muted);
+}
+
+.manage-tracks__title {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.manage-row {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 0.6rem;
+    align-items: center;
+    padding: 0.35rem 0;
+    border-bottom: 1px solid rgba(237, 235, 230, 0.06);
+}
+
+.manage-row__text {
+    display: grid;
+    gap: 0.2rem;
+    min-width: 0;
+}
+
+.manage-row__text small {
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+}
+
+.manage-path {
+    font-family: var(--mono);
+    font-size: 0.66rem;
+    color: var(--muted);
+    overflow-wrap: anywhere;
+}
+
+.manage-path--keep {
+    opacity: 0.6;
+}
+
+@media (max-width: 700px) {
+    .manage-tracks li,
+    .manage-row {
+        grid-template-columns: minmax(0, 1fr) auto;
+    }
+
+    .manage-tracks__num,
+    .manage-path {
+        grid-column: 1 / -1;
+    }
+}
