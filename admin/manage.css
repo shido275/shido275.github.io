@@ -1,6 +1,6 @@
 /* ==========================================================================
-   Manage tool - delete rows for releases, tracks, EPK media and links.
-   Loaded after admin.css so it only adds to the dashboard's existing look.
+   Manage tool - reorder and delete rows for releases, tracks, EPK media and
+   links. Loaded after admin.css so it only adds to the dashboard's look.
    ========================================================================== */
 
 .button.danger {
@@ -126,6 +126,32 @@
     opacity: 0.6;
 }
 
+.manage-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    justify-self: end;
+}
+
+.manage-actions .button {
+    min-width: 2rem;
+    padding: 0.15rem 0.45rem;
+}
+
+.manage-actions .button[disabled] {
+    opacity: 0.35;
+}
+
+.manage-actions .button.danger {
+    min-width: auto;
+    margin-left: 0.15rem;
+}
+
+.manage-note {
+    margin: 0.4rem 0 0;
+    font-size: 0.72rem;
+}
+
 @media (max-width: 700px) {
     .manage-tracks li,
     .manage-row {
@@ -135,5 +161,9 @@
     .manage-tracks__num,
     .manage-path {
         grid-column: 1 / -1;
+    }
+
+    .manage-actions {
+        justify-self: start;
     }
 }
