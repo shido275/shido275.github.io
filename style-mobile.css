@@ -1,0 +1,139 @@
+/* ==========================================================================
+   Device polish - loaded last by style.css so it can adjust the layers above
+   without duplicating them. Deliberately conservative: overflow guards, touch
+   sizing, focus rings and anchor offsets. Nothing here redefines the look.
+   ========================================================================== */
+
+html {
+    /* Respect iOS/Android text scaling instead of locking it. */
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    /* Anchors land under the sticky header instead of behind it. */
+    scroll-padding-top: 5.5rem;
+}
+
+body {
+    /* A single wide child must not turn the whole page sideways on a phone. */
+    overflow-x: hidden;
+}
+
+/* Media never overflows its column, and never squashes below its aspect box. */
+img,
+video,
+iframe,
+svg {
+    max-width: 100%;
+}
+
+img,
+video {
+    height: auto;
+}
+
+/* Long user-entered strings wrap instead of pushing a card wide. */
+.live-title,
+.card-meta,
+.folder-copy strong,
+.mega-link span,
+.contact-card {
+    overflow-wrap: anywhere;
+}
+
+/* Keyboard users get a visible ring; pointer users see nothing extra. */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+    outline: 2px solid var(--blood);
+    outline-offset: 3px;
+}
+
+/* Notches and rounded corners: keep content off the hardware edges. */
+.site-header {
+    padding-left: max(1rem, env(safe-area-inset-left));
+    padding-right: max(1rem, env(safe-area-inset-right));
+}
+
+main {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+}
+
+/* ------------------------------------------------------------------ phones */
+
+@media (max-width: 820px) {
+    /* Comfortable thumb targets without changing text sizes. */
+    .site-nav a,
+    .nav-mobile-toggle,
+    .mega-link,
+    .link-tile,
+    .button {
+        min-height: 44px;
+    }
+
+    .site-nav a,
+    .button {
+        display: inline-flex;
+        align-items: center;
+    }
+
+    .section-heading {
+        margin-bottom: 1.6rem;
+    }
+
+    /* Nothing needs to sit level with a fixed dock on a phone. */
+    .embed-shell {
+        min-height: 220px;
+    }
+
+    .embed-shell.wide {
+        min-height: 260px;
+    }
+}
+
+@media (max-width: 420px) {
+    .live-meta {
+        gap: 0.4rem 0.6rem;
+    }
+
+    /* Title wraps rather than truncating to nothing on a narrow screen. */
+    .live-title {
+        flex-basis: 100%;
+        white-space: normal;
+    }
+}
+
+/* ------------------------------------------------- landscape phones/tablets */
+
+@media (max-height: 480px) and (orientation: landscape) {
+    /* A 16:9 player taller than the viewport forces scrolling mid-video. */
+    .live-embed {
+        max-height: 78vh;
+    }
+
+    .embed-shell {
+        min-height: 0;
+    }
+}
+
+/* ---------------------------------------------------------- large desktops */
+
+@media (min-width: 1500px) {
+    /* Keep line lengths readable instead of stretching text edge to edge. */
+    .section-heading {
+        max-width: 860px;
+    }
+}
+
+/* Let motion-sensitive visitors stop the decorative loops. */
+@media (prefers-reduced-motion: reduce) {
+    html {
+        scroll-behavior: auto;
+    }
+
+    .live-badge {
+        animation: none;
+    }
+}

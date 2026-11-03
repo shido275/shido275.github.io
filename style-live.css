@@ -1,5 +1,7 @@
+@import url('style-mobile.css');
+
 /* ==========================================================================
-   Live stream - Rumble live embed and the offline card. Loaded by style.css
+   Live stream - Rumble player and the offline card. Loaded by style.css
    before the gothic layer.
    ========================================================================== */
 
@@ -9,10 +11,19 @@
     background: #000;
 }
 
+/* The shell stamps "● LIVE" on every embed; the real player carries its own
+   badge, so the stamp would sit on top of the video. */
+.embed-shell.live-on::before {
+    display: none;
+}
+
 .live-embed {
     position: relative;
     width: 100%;
     aspect-ratio: 16 / 9;
+    /* A tall player on a short screen would otherwise push the title off. */
+    max-height: 62vh;
+    margin: 0 auto;
     background: #000;
 }
 
@@ -24,6 +35,12 @@
     height: 100%;
     border: 0;
     display: block;
+    background: #000;
+}
+
+/* Contain, never crop: a stream letterboxed by its broadcaster stays whole. */
+.live-embed .live-video {
+    object-fit: contain;
 }
 
 .live-meta {
@@ -83,7 +100,7 @@
     text-transform: uppercase;
     color: var(--text);
     border-bottom: 1px solid var(--blood);
-    padding-bottom: 0.1rem;
+    padding: 0.35rem 0;
     white-space: nowrap;
 }
 
@@ -113,6 +130,17 @@
 
 .live-offline .button {
     margin-top: 0.25rem;
+}
+
+@media (max-width: 560px) {
+    /* Phones: full-width controls, no fixed max-height fighting the grid. */
+    .live-embed {
+        max-height: none;
+    }
+
+    .live-meta {
+        padding: 0.7rem 0.85rem;
+    }
 }
 
 @media (prefers-reduced-motion: reduce) {
