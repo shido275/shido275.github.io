@@ -51,7 +51,7 @@
 
         const slides = photos.map((photo, index) => `
             <figure class="slide${index === 0 ? " is-active" : ""}" data-slide="${index}">
-                <img src="${escapeHtml(photo.src)}" alt="${escapeHtml(photo.alt || photo.caption || "X/iD photo")}"
+                <img src="${escapeHtml(photo.src)}" alt="${escapeHtml(photo.alt || photo.caption || "X/i\\D photo")}"
                     loading="${index === 0 ? "eager" : "lazy"}" decoding="async">
                 ${photo.caption || photo.credit ? `<figcaption>
                     ${photo.caption ? `<span class="slide-caption">${escapeHtml(photo.caption)}</span>` : ""}
@@ -308,26 +308,102 @@
 
     /* -------------------------------------------------------------------- live */
 
-    /*  live.json is written by scripts/rumble-live.js in a scheduled workflow:
-        the Rumble API has no CORS headers and includes the stream key, so the
-        browser never talks to Rumble directly. Three states are supported:
-        live, offline with a last broadcast, and no data at all (static markup
-        is left alone). */
+    /*  live.json is written by scripts/rumble-live.js in a scheduled workflow,
+        because rumble.com sends no CORS headers and the page cannot read the
+        channel itself. Three states are supported: live, offline with a last
+        broadcast, and no data at all (static markup is left alone).
+        The Rumble iframe embed cannot work here: rumble.com/embed/<id>/ answers
+        410 Gone without a publisher id, and the channel page never exposes one.
+        The stream's HLS playlist is public and CORS-open, so the player is a
+        real <video>: native HLS in Safari, hls.js (loaded on demand) elsewhere. */
+    const HLS_JS_URL = "https://cdn.jsdelivr.net/npm/hls.js@1/dist/hls.min.js";
+    let hlsJsPromise = null;
+    let liveKey = null;
+
+    function loadHlsJs() {
+        if (window.Hls) return Promise.resolve(window.Hls);
+        if (hlsJsPromise) return hlsJsPromise;
+        hlsJsPromise = new Promise(resolve => {
+            const script = document.createElement("script");
+            script.src = HLS_JS_URL;
+            script.async = true;
+            script.onload = () => resolve(window.Hls || null);
+            script.onerror = () => resolve(null);
+            document.head.appendChild(script);
+        });
+        return hlsJsPromise;
+    }
+
+    function attachStream(video, stream, channel) {
+        if (!video || !stream.hlsUrl) return;
+
+        const play = () => {
+            const started = video.play();
+            if (started && typeof started.catch === "function") started.catch(() => {});
+        };
+
+        // A browser that cannot play the feed gets a way to watch, not a dead box.
+        const giveUp = () => {
+            const shell = document.querySelector("#live-player");
+            if (!shell) return;
+            liveKey = null;
+            shell.classList.remove("live-on");
+            shell.innerHTML = `
+                <div class="live-offline">
+                    <span class="live-badge live-badge--off">Live now</span>
+                    <p>This browser could not play the stream here.</p>
+                    <a class="button primary" href="${escapeHtml(stream.pageUrl || channel)}" target="_blank" rel="noopener">Watch on Rumble</a>
+                </div>
+            `;
+        };
+
+        if (video.canPlayType("application/vnd.apple.mpegurl")) {
+            video.src = stream.hlsUrl;
+            play();
+            return;
+        }
+
+        loadHlsJs().then(Hls => {
+            if (!Hls || !Hls.isSupported()) {
+                giveUp();
+                return;
+            }
+            const player = new Hls({ lowLatencyMode: true, backBufferLength: 30 });
+            player.loadSource(stream.hlsUrl);
+            player.attachMedia(video);
+            player.on(Hls.Events.MANIFEST_PARSED, play);
+            player.on(Hls.Events.ERROR, (event, data) => {
+                if (data && data.fatal) {
+                    player.destroy();
+                    giveUp();
+                }
+            });
+        });
+    }
+
     function renderLive(doc) {
         const player = document.querySelector("#live-player");
         const chat = document.querySelector("#live-chat");
         if (!player || !doc || typeof doc !== "object") return;
 
         const channel = escapeHtml(doc.channel || "https://rumble.com/user/yaboishido");
-        const stream = doc.live && doc.stream && doc.stream.embedUrl ? doc.stream : null;
+        const stream = doc.live && doc.stream && (doc.stream.hlsUrl || doc.stream.embedUrl) ? doc.stream : null;
         const last = doc.lastStream && doc.lastStream.id ? doc.lastStream : null;
+
+        // Polling every minute must never tear down a stream that is playing.
+        const key = stream ? `live:${stream.id}:${stream.hlsUrl || stream.embedUrl}` : `offline:${last ? last.id : ""}`;
+        if (key === liveKey) return;
+        liveKey = key;
 
         if (stream) {
             player.classList.add("live-on");
             player.innerHTML = `
                 <div class="live-embed">
-                    <iframe src="${escapeHtml(stream.embedUrl)}" title="${escapeHtml(stream.title || "Rumble livestream")}"
-                        allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>
+                    ${stream.hlsUrl
+                        ? `<video class="live-video" controls autoplay muted playsinline preload="metadata"
+                                poster="${escapeHtml(stream.thumb || "")}"></video>`
+                        : `<iframe src="${escapeHtml(stream.embedUrl)}" title="${escapeHtml(stream.title || "Rumble livestream")}"
+                                allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>`}
                 </div>
                 <div class="live-meta">
                     <span class="live-badge">Live now</span>
@@ -335,6 +411,7 @@
                     <a class="live-link" href="${escapeHtml(stream.pageUrl || channel)}" target="_blank" rel="noopener">Open on Rumble</a>
                 </div>
             `;
+            if (stream.hlsUrl) attachStream(player.querySelector(".live-video"), stream, channel);
         } else {
             player.classList.remove("live-on");
             player.innerHTML = `
