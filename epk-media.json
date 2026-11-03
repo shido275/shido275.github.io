@@ -1,22 +1,10 @@
 {
   "photos": [
     {
-      "src": "assets/press-photo-1.svg",
-      "caption": "Studio Portrait",
-      "alt": "X/i\\D studio portrait",
-      "credit": ""
-    },
-    {
-      "src": "assets/press-photo-2.svg",
-      "caption": "Live Holographic Show",
-      "alt": "X/i\\D live holographic show",
-      "credit": ""
-    },
-    {
-      "src": "assets/press-photo-3.svg",
-      "caption": "Synthesizer Production Setup",
-      "alt": "X/i\\D synthesizer production setup",
-      "credit": ""
+      "src": "assets/photos/photo-download-2.jpeg",
+      "caption": "st0j",
+      "alt": "Download (2)",
+      "credit": "@maoriboishido"
     }
   ],
   "videos": [
