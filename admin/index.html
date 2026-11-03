@@ -10,6 +10,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="../style.css">
     <link rel="stylesheet" href="admin.css">
+    <link rel="stylesheet" href="manage.css">
 </head>
 
 <body class="admin">
@@ -42,6 +43,9 @@
             </button>
             <button class="admin-nav__item" type="button" data-view="links">
                 <span>All Links</span><small>Directory</small>
+            </button>
+            <button class="admin-nav__item" type="button" data-view="manage">
+                <span>Manage</span><small>Delete items</small>
             </button>
             <button class="admin-nav__item" type="button" data-view="settings">
                 <span>Connect</span><small>Token</small>
@@ -392,6 +396,74 @@
             </section>
 
             <!-- ==============================================
+                 MANAGE
+                 ============================================== -->
+            <section class="admin-view" id="view-manage" aria-labelledby="manage-heading">
+                <div class="panel-head">
+                    <p class="eyebrow">Clean up</p>
+                    <h1 id="manage-heading">Manage &amp; delete</h1>
+                    <p class="hint">Everything already published, in one list. Deleting removes the entry and, for
+                        uploads, the file itself. Nothing changes until the commit lands, and the plan can be
+                        previewed first.</p>
+                </div>
+
+                <div class="panel">
+                    <div class="row">
+                        <button class="button" type="button" id="manage-load">Load published items</button>
+                        <button class="button ghost" type="button" id="manage-reset">Reset</button>
+                        <span class="status" id="manage-count">Not loaded</span>
+                    </div>
+                    <p class="hint">Photos and videos uploaded to <code>assets/photos/</code> or
+                        <code>assets/videos/</code> are deleted from the repository too. Files that the page's
+                        hand-written fallback still points at are left in place and marked <em>kept</em>.</p>
+                    <div id="manage-releases"></div>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-head">
+                        <p class="eyebrow">EPK</p>
+                        <h2>Photos</h2>
+                    </div>
+                    <div id="manage-photos"></div>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-head">
+                        <p class="eyebrow">EPK</p>
+                        <h2>Videos</h2>
+                    </div>
+                    <div id="manage-videos"></div>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-head">
+                        <p class="eyebrow">Directory</p>
+                        <h2>Links</h2>
+                    </div>
+                    <p class="hint">Emptying a group hands that section back to the site's built-in list.</p>
+                    <div id="manage-links"></div>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-head">
+                        <p class="eyebrow">Publish</p>
+                        <h2>Commit deletions</h2>
+                    </div>
+                    <div class="publish-grid">
+                        <label>Commit message<input id="manage-message" autocomplete="off"></label>
+                        <label>Branch<input id="manage-branch" autocomplete="off" spellcheck="false"
+                                placeholder="current branch"></label>
+                        <label class="checkbox"><input type="checkbox" id="manage-dryrun"> Dry run</label>
+                    </div>
+                    <div class="row">
+                        <button class="button" type="button" id="manage-plan">Preview plan</button>
+                        <button class="button danger" type="button" id="manage-publish">Delete &amp; publish</button>
+                    </div>
+                    <div id="manage-output" aria-live="polite"></div>
+                </div>
+            </section>
+
+            <!-- ==============================================
                  CONNECT
                  ============================================== -->
             <section class="admin-view" id="view-settings" aria-labelledby="connect-heading">
@@ -440,6 +512,7 @@
     <script src="app.js"></script>
     <script src="media.js"></script>
     <script src="links.js"></script>
+    <script src="manage.js"></script>
 </body>
 
 </html>
