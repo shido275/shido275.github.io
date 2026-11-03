@@ -1,24 +1,29 @@
 /* ==========================================================================
-   Release Importer shell - sits on top of ../style.css tokens.
+   Control Room - dashboard shell sitting on top of ../style.css tokens.
    ========================================================================== */
 
-body.importer {
-    padding-bottom: 4rem;
+body.admin {
+    padding-bottom: 2rem;
 }
 
-body.importer.is-busy {
+body.admin.is-busy {
     cursor: progress;
 }
 
-.importer-bar {
+.admin-bar {
     display: flex;
     align-items: center;
     gap: 1rem;
     flex-wrap: wrap;
     justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    background: rgba(4, 4, 4, 0.94);
+    backdrop-filter: blur(14px);
 }
 
-.importer-bar__title {
+.admin-bar__title {
     margin: 0;
     font-family: var(--heading);
     font-size: 0.72rem;
@@ -28,12 +33,98 @@ body.importer.is-busy {
     color: var(--muted);
 }
 
-.importer-main {
-    max-width: 1080px;
+.admin-bar__meta {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+}
+
+.admin-shell {
+    display: grid;
+    grid-template-columns: 216px minmax(0, 1fr);
+    gap: clamp(1rem, 3vw, 2rem);
+    max-width: 1320px;
     margin: 0 auto;
-    padding: 2.5rem clamp(1rem, 4vw, 2.5rem) 0;
+    padding: 1.5rem clamp(1rem, 3vw, 2rem) 4rem;
+    align-items: start;
+}
+
+.admin-nav {
+    position: sticky;
+    top: 5rem;
+    display: grid;
+    gap: 0.3rem;
+    border-right: 1px solid var(--line);
+    padding-right: 0.9rem;
+}
+
+.admin-nav__item {
+    display: grid;
+    gap: 0.15rem;
+    text-align: left;
+    background: transparent;
+    border: 1px solid transparent;
+    border-left: 2px solid transparent;
+    padding: 0.55rem 0.7rem;
+    cursor: pointer;
+    color: var(--muted);
+    transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+}
+
+.admin-nav__item span {
+    font-family: var(--heading);
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: inherit;
+}
+
+.admin-nav__item small {
+    font-family: var(--mono);
+    font-size: 0.55rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    opacity: 0.65;
+}
+
+.admin-nav__item:hover {
+    color: var(--text);
+    border-color: rgba(237, 235, 230, 0.14);
+}
+
+.admin-nav__item.is-active {
+    color: var(--text);
+    background: rgba(255, 255, 255, 0.035);
+    border-color: var(--line);
+    border-left-color: var(--blood);
+}
+
+.admin-main {
+    min-width: 0;
+}
+
+.admin-view {
+    display: none;
+}
+
+.admin-view.is-active {
     display: grid;
     gap: 1.5rem;
+}
+
+.panel-head h1 {
+    margin: 0;
+    font-family: var(--display);
+    font-weight: 400;
+    font-size: clamp(1.7rem, 4vw, 2.5rem);
+    line-height: 1.05;
+    letter-spacing: 0.02em;
+}
+
+.panel-head h1::first-letter {
+    color: var(--blood);
 }
 
 .panel {
@@ -63,8 +154,60 @@ body.importer.is-busy {
 
 .panel-head h2 {
     margin: 0;
-    font-size: clamp(1.5rem, 3.5vw, 2rem);
+    font-family: var(--display);
+    font-size: clamp(1.4rem, 3.5vw, 1.9rem);
+    font-weight: 400;
 }
+
+.subsection-title {
+    margin: 1.75rem 0 0.4rem;
+    font-size: 1.3rem;
+}
+
+/* --------------------------------------------------------------- stat cards */
+
+.stat-grid {
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: repeat(auto-fit, minmax(124px, 1fr));
+}
+
+.stat-card {
+    border: 1px solid var(--line);
+    padding: 1rem 1.1rem;
+    display: grid;
+    gap: 0.3rem;
+    background: linear-gradient(180deg, rgba(14, 14, 14, 0.9), rgba(6, 6, 6, 0.9));
+    position: relative;
+}
+
+.stat-card::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: -1px;
+    width: 28px;
+    height: 1px;
+    background: var(--blood);
+}
+
+.stat-card strong {
+    font-family: var(--display);
+    font-weight: 400;
+    font-size: 2.1rem;
+    line-height: 1;
+    color: var(--text);
+}
+
+.stat-card span {
+    font-family: var(--mono);
+    font-size: 0.58rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+
+/* -------------------------------------------------------------- form fields */
 
 .field-grid {
     display: grid;
@@ -84,8 +227,18 @@ body.importer.is-busy {
     color: var(--muted);
 }
 
+.field-grid label.wide {
+    grid-column: 1 / -1;
+}
+
 .field-grid input,
-.field-grid select {
+.field-grid select,
+.field-grid textarea,
+.publish-grid input,
+.media-row input,
+.media-row select,
+.link-row input,
+.link-row select {
     font-family: var(--body);
     font-size: 1rem;
     letter-spacing: 0.01em;
@@ -98,8 +251,20 @@ body.importer.is-busy {
     width: 100%;
 }
 
+.field-grid textarea {
+    min-height: 5.5rem;
+    resize: vertical;
+    line-height: 1.6;
+}
+
 .field-grid input:focus,
-.field-grid select:focus {
+.field-grid select:focus,
+.field-grid textarea:focus,
+.publish-grid input:focus,
+.media-row input:focus,
+.media-row select:focus,
+.link-row input:focus,
+.link-row select:focus {
     outline: none;
     border-color: rgba(212, 21, 21, 0.6);
     background: rgba(212, 21, 21, 0.05);
@@ -110,12 +275,32 @@ body.importer.is-busy {
     font-size: 0.85rem;
 }
 
+.publish-grid {
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    align-items: end;
+    margin-bottom: 1rem;
+}
+
+.publish-grid label {
+    display: grid;
+    gap: 0.35rem;
+    font-family: var(--heading);
+    font-size: 0.64rem;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+
 .hint,
 .target-line {
     font-size: 0.92rem;
     color: var(--muted);
     margin: 0 0 1rem;
-    max-width: 70ch;
+    max-width: 74ch;
+    line-height: 1.7;
 }
 
 .target-line code,
@@ -190,6 +375,8 @@ body.importer.is-busy {
     border-color: var(--blood);
     background: rgba(212, 21, 21, 0.06);
 }
+
+/* ------------------------------------------------------------------- tables */
 
 .track-table {
     width: 100%;
@@ -281,7 +468,15 @@ body.importer.is-busy {
     accent-color: var(--blood);
     width: 1rem;
     height: 1rem;
+    min-height: auto;
 }
+
+.checkbox--inline {
+    align-self: end;
+    min-height: 2.6rem;
+}
+
+/* -------------------------------------------------------------- plan output */
 
 .plan-summary {
     display: flex;
@@ -307,6 +502,7 @@ body.importer.is-busy {
     padding-left: 1.1rem;
     font-size: 0.92rem;
     color: #d8b25a;
+    line-height: 1.6;
 }
 
 .ok-line {
@@ -316,6 +512,11 @@ body.importer.is-busy {
     text-transform: uppercase;
     color: #9ad19a;
     margin: 0.9rem 0 0;
+}
+
+.ok-line a {
+    color: inherit;
+    border-bottom: 1px solid currentColor;
 }
 
 .plan-files {
@@ -340,6 +541,129 @@ body.importer.is-busy {
     color: #d9d5cd;
 }
 
+/* ------------------------------------------------------------------- media */
+
+.media-list {
+    display: grid;
+    gap: 0.6rem;
+    margin-top: 1rem;
+}
+
+.media-row {
+    display: grid;
+    grid-template-columns: 76px minmax(0, 1fr) auto;
+    gap: 0.8rem;
+    align-items: center;
+    border: 1px solid var(--line);
+    padding: 0.6rem;
+    background: rgba(0, 0, 0, 0.35);
+}
+
+.media-row__thumb {
+    width: 76px;
+    height: 57px;
+    object-fit: cover;
+    border: 1px solid var(--line);
+    background: #000;
+    display: grid;
+    place-items: center;
+    font-family: var(--mono);
+    font-size: 0.55rem;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    text-transform: uppercase;
+    overflow: hidden;
+    filter: grayscale(0.4);
+}
+
+.media-row__fields {
+    display: grid;
+    gap: 0.35rem;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+}
+
+.media-row__fields input,
+.media-row__fields select {
+    min-height: 2rem;
+    font-size: 0.9rem;
+    padding: 0.3rem 0.45rem;
+}
+
+.media-row__actions {
+    display: flex;
+    gap: 0.25rem;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.media-row__badge {
+    font-family: var(--mono);
+    font-size: 0.55rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--blood);
+}
+
+/* ------------------------------------------------------------------- links */
+
+.link-editor {
+    border-top: 1px solid var(--line);
+    padding-top: 1rem;
+    margin-top: 1.2rem;
+}
+
+.link-editor__head {
+    display: flex;
+    align-items: baseline;
+    gap: 0.7rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.6rem;
+}
+
+.link-editor__head h3 {
+    margin: 0;
+    font-family: var(--display);
+    font-size: 1.2rem;
+    font-weight: 400;
+    letter-spacing: 0.03em;
+}
+
+.link-editor__head small {
+    font-family: var(--mono);
+    font-size: 0.56rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+
+.link-rows {
+    display: grid;
+    gap: 0.35rem;
+    margin-bottom: 0.6rem;
+}
+
+.link-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) repeat(2, minmax(0, 0.9fr)) auto;
+    gap: 0.4rem;
+    align-items: center;
+    padding: 0.35rem 0;
+    border-bottom: 1px solid rgba(237, 235, 230, 0.06);
+}
+
+.link-row--compact {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) repeat(2, minmax(0, 0.8fr)) auto;
+}
+
+.link-row input,
+.link-row select {
+    min-height: 2.1rem;
+    font-size: 0.88rem;
+    padding: 0.3rem 0.45rem;
+}
+
+/* --------------------------------------------------------------------- log */
+
 .log {
     margin: 0;
     max-height: 16rem;
@@ -353,6 +677,74 @@ body.importer.is-busy {
     color: #b8b3aa;
     white-space: pre-wrap;
     word-break: break-word;
+}
+
+.admin-logbar {
+    position: fixed;
+    inset: auto 0 0 0;
+    z-index: 60;
+    background: #060606;
+    border-top: 1px solid var(--line);
+    padding: 0.6rem 1rem 0.9rem;
+    display: grid;
+    gap: 0.45rem;
+    box-shadow: 0 -20px 50px rgba(0, 0, 0, 0.6);
+}
+
+.admin-logbar[hidden] {
+    display: none;
+}
+
+.admin-logbar__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.admin-logbar__head h2 {
+    margin: 0;
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    font-weight: 400;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+
+.admin-logbar .log {
+    max-height: 22vh;
+}
+
+@media (max-width: 900px) {
+    .admin-shell {
+        grid-template-columns: 1fr;
+        padding-top: 1rem;
+    }
+
+    .admin-nav {
+        position: static;
+        grid-auto-flow: column;
+        grid-auto-columns: minmax(112px, 1fr);
+        overflow-x: auto;
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+        padding: 0 0 0.7rem;
+    }
+
+    .media-row {
+        grid-template-columns: 1fr;
+    }
+
+    .media-row__thumb {
+        width: 100%;
+        height: 120px;
+    }
+
+    .link-row,
+    .link-row--compact {
+        grid-template-columns: 1fr 1fr;
+    }
 }
 
 @media (max-width: 720px) {

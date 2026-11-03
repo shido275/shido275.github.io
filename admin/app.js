@@ -1,23 +1,68 @@
 /* ==========================================================================
-   Release Importer - browser app that commits releases to the repo through
-   the GitHub REST API. No server, no build step, no dependencies.
+   Control Room shell - config, GitHub REST plumbing, routing and the release
+   importer. No server, no build step, no dependencies.
+
+   window.Admin is the shared API the photo, video and link tools build on:
+     Admin.state, Admin.log, Admin.setStatus, Admin.gh, Admin.readJson,
+     Admin.commitWrites, Admin.publish, Admin.renderPlan, Admin.registerView
    ========================================================================== */
 (function () {
     "use strict";
 
     const CORE = window.ReleaseImport;
-    const CONFIG_KEY = "xid.importer.config.v1";
+    const CONFIG_KEY = "xid.admin.config.v2";
     const API = "https://api.github.com";
     const $ = id => document.getElementById(id);
 
     const state = {
         config: { owner: "shido275", repo: "shido275.github.io", branch: "main", token: "" },
         manifest: [],
-        files: [], // { file, name, title, trackNumber }
+        files: [],
         coverFile: null,
         plan: null,
-        busy: false
+        busy: false,
+        view: "overview",
+        connected: false
     };
+
+    const viewHooks = {};
+
+    /* ---------------------------------------------------------------- helpers */
+
+    function escapeHtml(value) {
+        return String(value == null ? "" : value).replace(/[&<>"']/g, character => ({
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#39;"
+        }[character]));
+    }
+
+    function log(message) {
+        const box = $("log");
+        if (!box) return;
+        const line = `[${new Date().toLocaleTimeString()}] ${message}`;
+        box.textContent += (box.textContent ? "\n" : "") + line;
+        box.scrollTop = box.scrollHeight;
+    }
+
+    function setStatus(text, tone) {
+        document.querySelectorAll("#conn-status, #conn-status-settings").forEach(node => {
+            node.textContent = text;
+            node.dataset.tone = tone || "";
+        });
+    }
+
+    function setBusy(busy) {
+        state.busy = busy;
+        document.body.classList.toggle("is-busy", busy);
+        document.querySelectorAll("button").forEach(button => {
+            if (button.dataset.alwaysOn === "true") return;
+            button.disabled = busy;
+        });
+        if (!busy && $("btn-import")) $("btn-import").disabled = !state.plan;
+    }
 
     /* ---------------------------------------------------------------- config */
 
@@ -55,31 +100,14 @@
         $("cfg-token").value = state.config.token || "";
     }
 
-    function log(message) {
-        const box = $("log");
-        const line = `[${new Date().toLocaleTimeString()}] ${message}`;
-        box.textContent += (box.textContent ? "\n" : "") + line;
-        box.scrollTop = box.scrollHeight;
-    }
-
-    function setStatus(text, tone) {
-        const node = $("conn-status");
-        node.textContent = text;
-        node.dataset.tone = tone || "";
-    }
-
-    function setBusy(busy) {
-        state.busy = busy;
-        $("btn-import").disabled = busy || !state.plan;
-        $("btn-plan").disabled = busy;
-        $("btn-connect").disabled = busy;
-        document.body.classList.toggle("is-busy", busy);
-    }
-
     /* ------------------------------------------------------------ github api */
 
     function encodeRef(branch) {
         return String(branch).split("/").map(encodeURIComponent).join("/");
+    }
+
+    function encodePath(path) {
+        return String(path).split("/").map(encodeURIComponent).join("/");
     }
 
     function authHeaders(extra) {
@@ -120,6 +148,21 @@
         }
     }
 
+    // Read a committed JSON file straight off the configured branch.
+    async function readJson(path) {
+        if (!state.config.token) return null;
+        const url = `${API}/repos/${state.config.owner}/${state.config.repo}/contents/${encodePath(path)}?ref=${encodeURIComponent(state.config.branch)}`;
+        const response = await fetch(url, { headers: authHeaders({ Accept: "application/vnd.github.raw+json" }) });
+        if (response.status === 404) return null;
+        if (!response.ok) throw new Error(`Could not read ${path} (${response.status})`);
+        const text = await response.text();
+        try {
+            return JSON.parse(text);
+        } catch {
+            throw new Error(`${path} on ${state.config.branch} is not valid JSON`);
+        }
+    }
+
     async function verifyConnection() {
         if (!state.config.token) {
             setStatus("Add a token first", "warn");
@@ -139,10 +182,12 @@
                 log(`Token for ${user.login} lacks Contents: write on ${state.config.owner}/${state.config.repo}.`);
                 return false;
             }
+            state.connected = true;
             setStatus(`${user.login} - ${repo.full_name}`, "ok");
             log(`Connected as ${user.login} to ${repo.full_name} (${state.config.branch}).`);
             return true;
         } catch (error) {
+            state.connected = false;
             setStatus(error.message, "error");
             log(`Connection failed: ${error.message}`);
             return false;
@@ -150,6 +195,7 @@
     }
 
     async function loadManifest() {
+        if (!state.config.token) return [];
         const url = `${API}/repos/${state.config.owner}/${state.config.repo}/contents/${CORE.MANIFEST_PATH}?ref=${encodeURIComponent(state.config.branch)}`;
         const response = await fetch(url, { headers: authHeaders({ Accept: "application/vnd.github.raw+json" }) });
         if (response.status === 404) {
@@ -157,8 +203,7 @@
             return [];
         }
         if (!response.ok) throw new Error(`Could not read manifest (${response.status})`);
-        const text = await response.text();
-        const parsed = JSON.parse(text);
+        const parsed = JSON.parse(await response.text());
         return Array.isArray(parsed) ? parsed : [];
     }
 
@@ -171,160 +216,6 @@
         } catch (error) {
             log(`Catalogue read failed: ${error.message}`);
         }
-    }
-
-    /* ----------------------------------------------------------- release form */
-
-    function renderReleaseOptions() {
-        const list = $("release-list");
-        const releases = CORE.listReleases(state.manifest);
-        list.innerHTML = releases.map(item => `<option value="${escapeAttr(item.release)}">${escapeAttr(item.category)} - ${item.tracks.length} track(s)</option>`).join("");
-    }
-
-    function escapeAttr(value) {
-        return String(value == null ? "" : value)
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;");
-    }
-
-    // Choosing an existing release fills the form from the catalogue.
-    function applyExistingRelease() {
-        const name = $("form-release").value.trim();
-        if (!name) return;
-        const match = CORE.listReleases(state.manifest).find(item => item.release.toLowerCase() === name.toLowerCase());
-        if (!match) return;
-        $("form-category").value = match.category;
-        const first = match.tracks[0] || {};
-        if (first.album) $("form-album").value = first.album;
-        if (first.artist) $("form-artist").value = first.artist;
-        if (first.date) $("form-date").value = first.date;
-        const next = CORE.nextTrackNumber(state.manifest, `Music/${match.category}/${match.release}`);
-        state.files.forEach((row, index) => {
-            row.trackNumber = next + index;
-        });
-        renderTracks();
-        log(`Filling into existing release "${match.release}" from track ${next}.`);
-    }
-
-    function addFiles(fileList) {
-        const incoming = Array.from(fileList || []);
-        let audioAdded = 0;
-        incoming.forEach(file => {
-            if (CORE.isAudio(file.name)) {
-                if (state.files.some(row => row.name === file.name && row.file.size === file.size)) return;
-                state.files.push({ file, name: file.name, title: CORE.prettyName(file.name), trackNumber: state.files.length + 1 });
-                audioAdded += 1;
-            } else if (CORE.isImage(file.name) && !state.coverFile) {
-                state.coverFile = file;
-                log(`Cover art: ${file.name} (${CORE.formatBytes(file.size)})`);
-            } else if (!CORE.isImage(file.name)) {
-                log(`Skipped unsupported file: ${file.name}`);
-            }
-        });
-        state.files.sort((a, b) => CORE.naturalCompare(a.name, b.name));
-        state.files.forEach((row, index) => {
-            if (!row.trackNumber || row.trackNumber <= 0) row.trackNumber = index + 1;
-        });
-        if (audioAdded) log(`${audioAdded} audio file(s) queued.`);
-        renderTracks();
-    }
-
-    function renderTracks() {
-        const body = $("track-rows");
-        body.innerHTML = state.files.map((row, index) => `
-            <tr>
-                <td>${index + 1}</td>
-                <td class="cell-title"><input data-index="${index}" data-field="title" value="${escapeAttr(row.title)}" aria-label="Track title"></td>
-                <td class="cell-file">${escapeAttr(row.name)}<small>${CORE.formatBytes(row.file.size)}</small></td>
-                <td class="cell-num"><input type="number" min="1" data-index="${index}" data-field="trackNumber" value="${row.trackNumber}" aria-label="Track number"></td>
-                <td><button class="button ghost" type="button" data-remove="${index}" aria-label="Remove ${escapeAttr(row.name)}">Remove</button></td>
-            </tr>
-        `).join("");
-        $("track-empty").hidden = state.files.length > 0;
-        const folder = $("form-category").value && $("form-release").value.trim()
-            ? `Music/${$("form-category").value}/${$("form-release").value.trim()}`
-            : "-";
-        $("target-folder").textContent = folder;
-        state.plan = null;
-        $("btn-import").disabled = true;
-        $("plan-output").innerHTML = "";
-    }
-
-    function wireTrackRows() {
-        $("track-rows").addEventListener("input", event => {
-            const input = event.target.closest("input[data-field]");
-            if (!input) return;
-            const row = state.files[Number(input.dataset.index)];
-            if (!row) return;
-            if (input.dataset.field === "title") row.title = input.value;
-            if (input.dataset.field === "trackNumber") row.trackNumber = Number(input.value) || 0;
-        });
-        $("track-rows").addEventListener("click", event => {
-            const button = event.target.closest("[data-remove]");
-            if (!button) return;
-            state.files.splice(Number(button.dataset.remove), 1);
-            state.files.forEach((row, index) => {
-                row.trackNumber = index + 1;
-            });
-            renderTracks();
-        });
-    }
-
-    function currentForm() {
-        return {
-            category: $("form-category").value,
-            release: $("form-release").value.trim(),
-            album: $("form-album").value.trim(),
-            artist: $("form-artist").value.trim() || CORE.DEFAULT_ARTIST,
-            date: $("form-date").value || new Date().toISOString().slice(0, 10),
-            titles: Object.fromEntries(state.files.map(row => [row.name, row.title])),
-            trackNumbers: Object.fromEntries(state.files.map(row => [row.name, row.trackNumber]))
-        };
-    }
-
-    function buildPlan() {
-        const plan = CORE.planImport({
-            files: state.files.map(row => row.file),
-            coverFile: state.coverFile,
-            form: currentForm(),
-            existingManifest: state.manifest
-        });
-        state.plan = plan;
-        renderPlan(plan);
-        $("btn-import").disabled = state.busy;
-        if (!$("opt-branchname").value.trim()) $("opt-branchname").value = CORE.suggestBranchName(currentForm().release || "release");
-        if (!$("opt-message").value.trim()) $("opt-message").value = CORE.commitMessage(currentForm(), plan.trackCount);
-        return plan;
-    }
-
-    function renderPlan(plan) {
-        const rows = plan.writes.map(write => `
-            <tr>
-                <td><code>${escapeAttr(write.path)}</code></td>
-                <td>${write.kind}</td>
-                <td>${write.file ? CORE.formatBytes(write.file.size) : `${write.text.length} B`}</td>
-            </tr>
-        `).join("");
-
-        const warnings = plan.warnings.length
-            ? `<ul class="warn-list">${plan.warnings.map(warning => `<li>${escapeAttr(warning)}</li>`).join("")}</ul>`
-            : `<p class="ok-line">No warnings.</p>`;
-
-        $("plan-output").innerHTML = `
-            <div class="plan-summary">
-                <span><strong>${plan.trackCount}</strong> track(s)</span>
-                <span><strong>${plan.writes.length}</strong> file(s)</span>
-                <span><strong>${CORE.formatBytes(plan.totalBytes)}</strong> total</span>
-                <span><strong>+${plan.added}</strong> catalogue entries${plan.replaced ? `, <strong>${plan.replaced}</strong> replaced` : ""}</span>
-            </div>
-            ${warnings}
-            <details class="plan-files">
-                <summary>Files to write</summary>
-                <table class="track-table"><thead><tr><th>Path</th><th>Kind</th><th>Size</th></tr></thead><tbody>${rows}</tbody></table>
-            </details>
-        `;
     }
 
     /* ------------------------------------------------------------- committing */
@@ -344,7 +235,9 @@
         return bytesToBase64(new Uint8Array(buffer));
     }
 
-    async function commitPlan(plan, options) {
+    /* Atomic commit: blobs -> tree -> commit -> ref. A failure leaves the branch
+       exactly as it was. Shared by every tool. */
+    async function commitWrites(writes, options) {
         const branch = options.branch;
         const message = options.message;
         const dryRun = options.dryRun;
@@ -355,7 +248,7 @@
         const baseCommit = await gh(`/git/commits/${baseSha}`);
 
         const tree = [];
-        for (const write of plan.writes) {
+        for (const write of writes) {
             if (dryRun) {
                 log(`[dry run] would write ${write.path}`);
                 continue;
@@ -401,8 +294,229 @@
 
         const url = `https://github.com/${state.config.owner}/${state.config.repo}/commit/${newCommit.sha}`;
         log(`Done -> ${url}`);
-        $("plan-output").insertAdjacentHTML("beforeend", `<p class="ok-line">Committed to <strong>${escapeAttr(branch)}</strong> - <a href="${url}" target="_blank" rel="noopener">view commit</a></p>`);
         return newCommit.sha;
+    }
+
+    /* ------------------------------------------------------------- plan output */
+
+    function renderPlan(outputId, plan, stats) {
+        const rows = plan.writes.map(write => `
+            <tr>
+                <td><code>${escapeHtml(write.path)}</code></td>
+                <td>${escapeHtml(write.kind)}</td>
+                <td>${write.file ? CORE.formatBytes(write.file.size) : `${write.text.length} B`}</td>
+            </tr>
+        `).join("");
+
+        const warnings = plan.warnings && plan.warnings.length
+            ? `<ul class="warn-list">${plan.warnings.map(warning => `<li>${escapeHtml(warning)}</li>`).join("")}</ul>`
+            : `<p class="ok-line">No warnings.</p>`;
+
+        const summary = (stats || [])
+            .map(item => `<span><strong>${escapeHtml(item[0])}</strong> ${escapeHtml(item[1])}</span>`)
+            .join("");
+
+        $(outputId).innerHTML = `
+            <div class="plan-summary">
+                <span><strong>${plan.writes.length}</strong> file(s)</span>
+                <span><strong>${CORE.formatBytes(plan.totalBytes || 0)}</strong> total</span>
+                ${summary}
+            </div>
+            ${warnings}
+            <details class="plan-files">
+                <summary>Files to write</summary>
+                <table class="track-table"><thead><tr><th>Path</th><th>Kind</th><th>Size</th></tr></thead><tbody>${rows}</tbody></table>
+            </details>
+        `;
+    }
+
+    function publishSettings(prefix) {
+        return {
+            dryRun: Boolean($(`${prefix}-dryrun`) && $(`${prefix}-dryrun`).checked),
+            branch: ($(`${prefix}-branch`) && $(`${prefix}-branch`).value.trim()) || state.config.branch,
+            message: $(`${prefix}-message`) && $(`${prefix}-message`).value.trim()
+        };
+    }
+
+    function defaultBranchField(prefix, tool) {
+        const input = $(`${prefix}-branch`);
+        if (input && !input.value.trim()) input.value = CORE.suggestToolBranch(tool);
+    }
+
+    /* Preview + publish in one place so every tool behaves the same. */
+    async function publish(options) {
+        const { prefix, outputId, build, defaultMessage, stats } = options;
+        if (!state.config.token) {
+            log("Connect a token first - opening Connect.");
+            switchView("settings");
+            return null;
+        }
+
+        let plan;
+        try {
+            plan = build();
+        } catch (error) {
+            log(`Plan failed: ${error.message}`);
+            $(outputId).innerHTML = `<p class="warn-list">${escapeHtml(error.message)}</p>`;
+            return null;
+        }
+
+        renderPlan(outputId, plan, stats ? stats(plan) : []);
+        const settings = publishSettings(prefix);
+        const message = settings.message || defaultMessage;
+
+        if (!settings.dryRun && !window.confirm(`Write ${plan.writes.length} file(s) to ${state.config.owner}/${state.config.repo} on "${settings.branch}"?`)) {
+            log("Publish cancelled.");
+            return null;
+        }
+
+        setBusy(true);
+        try {
+            const sha = await commitWrites(plan.writes, { branch: settings.branch, message, dryRun: settings.dryRun });
+            if (sha) {
+                const url = `https://github.com/${state.config.owner}/${state.config.repo}/commit/${sha}`;
+                $(outputId).insertAdjacentHTML("beforeend", `<p class="ok-line">Committed to <strong>${escapeHtml(settings.branch)}</strong> - <a href="${url}" target="_blank" rel="noopener">view commit</a></p>`);
+                await refreshOverview();
+            }
+            return sha;
+        } catch (error) {
+            log(`Publish failed: ${error.message}`);
+            $(outputId).insertAdjacentHTML("beforeend", `<p class="warn-list">${escapeHtml(error.message)}</p>`);
+            return null;
+        } finally {
+            setBusy(false);
+        }
+    }
+
+    /* ------------------------------------------------------------- release form */
+
+    function renderReleaseOptions() {
+        const list = $("release-list");
+        const releases = CORE.listReleases(state.manifest);
+        list.innerHTML = releases
+            .map(item => `<option value="${escapeHtml(item.release)}">${escapeHtml(item.category)} - ${item.tracks.length} track(s)</option>`)
+            .join("");
+    }
+
+    // Choosing an existing release fills the form from the catalogue.
+    function applyExistingRelease() {
+        const name = $("form-release").value.trim();
+        if (!name) return;
+        const match = CORE.listReleases(state.manifest).find(item => item.release.toLowerCase() === name.toLowerCase());
+        if (!match) return;
+        $("form-category").value = match.category;
+        const first = match.tracks[0] || {};
+        if (first.album) $("form-album").value = first.album;
+        if (first.artist) $("form-artist").value = first.artist;
+        if (first.date) $("form-date").value = first.date;
+        if (!$("form-label").value.trim()) $("form-label").value = CORE.DEFAULT_LABEL;
+        const next = CORE.nextTrackNumber(state.manifest, `Music/${match.category}/${match.release}`);
+        state.files.forEach((row, index) => {
+            row.trackNumber = next + index;
+        });
+        renderTracks();
+        log(`Filling into existing release "${match.release}" from track ${next}.`);
+    }
+
+    function addFiles(fileList) {
+        const incoming = Array.from(fileList || []);
+        let audioAdded = 0;
+        incoming.forEach(file => {
+            if (CORE.isAudio(file.name)) {
+                if (state.files.some(row => row.name === file.name && row.file.size === file.size)) return;
+                state.files.push({ file, name: file.name, title: CORE.prettyName(file.name), trackNumber: state.files.length + 1 });
+                audioAdded += 1;
+            } else if (CORE.isImage(file.name) && !state.coverFile) {
+                state.coverFile = file;
+                log(`Cover art: ${file.name} (${CORE.formatBytes(file.size)})`);
+            } else if (!CORE.isImage(file.name)) {
+                log(`Skipped unsupported file: ${file.name}`);
+            }
+        });
+        state.files.sort((a, b) => CORE.naturalCompare(a.name, b.name));
+        state.files.forEach((row, index) => {
+            if (!row.trackNumber || row.trackNumber <= 0) row.trackNumber = index + 1;
+        });
+        if (audioAdded) log(`${audioAdded} audio file(s) queued.`);
+        renderTracks();
+    }
+
+    function renderTracks() {
+        const body = $("track-rows");
+        body.innerHTML = state.files.map((row, index) => `
+            <tr>
+                <td>${index + 1}</td>
+                <td class="cell-title"><input data-index="${index}" data-field="title" value="${escapeHtml(row.title)}" aria-label="Track title"></td>
+                <td class="cell-file">${escapeHtml(row.name)}<small>${CORE.formatBytes(row.file.size)}</small></td>
+                <td class="cell-num"><input type="number" min="1" data-index="${index}" data-field="trackNumber" value="${row.trackNumber}" aria-label="Track number"></td>
+                <td><button class="button ghost" type="button" data-remove="${index}" aria-label="Remove ${escapeHtml(row.name)}">Remove</button></td>
+            </tr>
+        `).join("");
+        $("track-empty").hidden = state.files.length > 0;
+        const folder = $("form-category").value && $("form-release").value.trim()
+            ? `Music/${$("form-category").value}/${$("form-release").value.trim()}`
+            : "-";
+        $("target-folder").textContent = folder;
+        state.plan = null;
+        $("btn-import").disabled = true;
+        $("plan-output").innerHTML = "";
+    }
+
+    function wireTrackRows() {
+        $("track-rows").addEventListener("input", event => {
+            const input = event.target.closest("input[data-field]");
+            if (!input) return;
+            const row = state.files[Number(input.dataset.index)];
+            if (!row) return;
+            if (input.dataset.field === "title") row.title = input.value;
+            if (input.dataset.field === "trackNumber") row.trackNumber = Number(input.value) || 0;
+        });
+        $("track-rows").addEventListener("click", event => {
+            const button = event.target.closest("[data-remove]");
+            if (!button) return;
+            state.files.splice(Number(button.dataset.remove), 1);
+            state.files.forEach((row, index) => {
+                row.trackNumber = index + 1;
+            });
+            renderTracks();
+        });
+    }
+
+    function currentForm() {
+        return {
+            category: $("form-category").value,
+            release: $("form-release").value.trim(),
+            album: $("form-album").value.trim(),
+            artist: $("form-artist").value.trim() || CORE.DEFAULT_ARTIST,
+            date: $("form-date").value || new Date().toISOString().slice(0, 10),
+            description: $("form-description").value.trim(),
+            performers: $("form-performers").value.trim(),
+            producers: $("form-producers").value.trim(),
+            writers: $("form-writers").value.trim(),
+            label: $("form-label").value.trim(),
+            genre: $("form-genre").value.trim(),
+            explicit: $("form-explicit").checked,
+            titles: Object.fromEntries(state.files.map(row => [row.name, row.title])),
+            trackNumbers: Object.fromEntries(state.files.map(row => [row.name, row.trackNumber]))
+        };
+    }
+
+    function buildPlan() {
+        const plan = CORE.planImport({
+            files: state.files.map(row => row.file),
+            coverFile: state.coverFile,
+            form: currentForm(),
+            existingManifest: state.manifest
+        });
+        state.plan = plan;
+        renderPlan("plan-output", plan, [
+            [`${plan.trackCount}`, "track(s)"],
+            [`+${plan.added}`, `catalogue entries${plan.replaced ? `, ${plan.replaced} replaced` : ""}`]
+        ]);
+        $("btn-import").disabled = state.busy;
+        if (!$("opt-branchname").value.trim()) $("opt-branchname").value = CORE.suggestBranchName(currentForm().release || "release");
+        if (!$("opt-message").value.trim()) $("opt-message").value = CORE.commitMessage(currentForm(), plan.trackCount);
+        return plan;
     }
 
     async function runImport() {
@@ -410,6 +524,7 @@
         if (!plan) return;
         if (!state.config.token) {
             log("Connect a token before importing.");
+            switchView("settings");
             return;
         }
         const dryRun = $("opt-dryrun").checked;
@@ -424,36 +539,112 @@
 
         setBusy(true);
         try {
-            await commitPlan(plan, { branch: targetBranch, message, dryRun });
+            const sha = await commitWrites(plan.writes, { branch: targetBranch, message, dryRun });
             if (!dryRun) {
                 state.plan = null;
                 await refreshCatalogue();
+                await refreshOverview();
+                if (sha) {
+                    const url = `https://github.com/${state.config.owner}/${state.config.repo}/commit/${sha}`;
+                    $("plan-output").insertAdjacentHTML("beforeend", `<p class="ok-line">Committed to <strong>${escapeHtml(targetBranch)}</strong> - <a href="${url}" target="_blank" rel="noopener">view commit</a></p>`);
+                }
             }
         } catch (error) {
             log(`Import failed: ${error.message}`);
+        } finally {
+            setBusy(false);
         }
-        setBusy(false);
     }
 
-    /* ------------------------------------------------------------------ wiring */
+    /* ------------------------------------------------------------------ views */
 
-    function init() {
-        loadConfig();
-        fillConfigInputs();
-        $("form-date").value = new Date().toISOString().slice(0, 10);
-        $("form-category").innerHTML = CORE.CATEGORIES.map(category => `<option value="${escapeAttr(category)}">${escapeAttr(category)}</option>`).join("");
-        $("opt-branchname").value = CORE.suggestBranchName("release");
-        renderTracks();
-        wireTrackRows();
+    function switchView(name) {
+        state.view = name;
+        document.querySelectorAll(".admin-nav__item").forEach(item => {
+            item.classList.toggle("is-active", item.dataset.view === name);
+        });
+        document.querySelectorAll(".admin-view").forEach(view => {
+            view.classList.toggle("is-active", view.id === `view-${name}`);
+        });
+        if (name === "overview") refreshOverview();
+        if (viewHooks[name]) viewHooks[name]();
+        window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function registerView(name, fn) {
+        viewHooks[name] = fn;
+    }
+
+    async function refreshOverview() {
+        if (!state.config.token) {
+            ["ov-tracks", "ov-releases", "ov-photos", "ov-videos", "ov-links"].forEach(id => {
+                if ($(id)) $(id).textContent = "-";
+            });
+            if ($("overview-status")) $("overview-status").textContent = "Connect a token to read the live catalogue.";
+            return;
+        }
+        try {
+            const [manifest, media, links] = await Promise.all([
+                readJson(CORE.MANIFEST_PATH).catch(() => []),
+                readJson(CORE.MEDIA_PATH).catch(() => null),
+                readJson(CORE.LINKS_PATH).catch(() => null)
+            ]);
+            const tracks = Array.isArray(manifest) ? manifest : [];
+            const photoCount = media && Array.isArray(media.photos) ? media.photos.length : 0;
+            const videoCount = media && Array.isArray(media.videos) ? media.videos.length : 0;
+            const linkCount = links
+                ? CORE.LINK_GROUPS.reduce((sum, group) => sum + (Array.isArray(links[group]) ? links[group].length : 0), 0)
+                    + (Array.isArray(links.quickSocials) ? links.quickSocials.length : 0)
+                : 0;
+
+            $("ov-tracks").textContent = tracks.length;
+            $("ov-releases").textContent = CORE.listReleases(tracks).length;
+            $("ov-photos").textContent = photoCount;
+            $("ov-videos").textContent = videoCount;
+            $("ov-links").textContent = linkCount;
+            if ($("overview-status")) {
+                $("overview-status").textContent = `Reading ${state.config.owner}/${state.config.repo} on ${state.config.branch}.`;
+            }
+        } catch (error) {
+            if ($("overview-status")) $("overview-status").textContent = `Could not read counts: ${error.message}`;
+        }
+    }
+
+    /* ---------------------------------------------------------------- wiring */
+
+    function wireShell() {
+        document.querySelectorAll(".admin-nav__item").forEach(item => {
+            item.addEventListener("click", () => switchView(item.dataset.view));
+        });
+        document.querySelectorAll("[data-goto]").forEach(button => {
+            button.addEventListener("click", () => switchView(button.dataset.goto));
+        });
+
+        $("btn-log-toggle").addEventListener("click", event => {
+            const bar = $("logbar");
+            bar.hidden = !bar.hidden;
+            event.currentTarget.setAttribute("aria-expanded", String(!bar.hidden));
+        });
+        $("log-clear").addEventListener("click", () => {
+            $("log").textContent = "";
+        });
+        $("btn-refresh").addEventListener("click", () => {
+            refreshOverview();
+            refreshCatalogue();
+        });
 
         $("btn-connect").addEventListener("click", async () => {
             saveConfig();
             const ok = await verifyConnection();
-            if (ok) await refreshCatalogue();
+            if (ok) {
+                await refreshCatalogue();
+                await refreshOverview();
+            }
         });
 
         $("btn-forget").addEventListener("click", () => {
             state.config.token = "";
+            state.connected = false;
             $("cfg-token").value = "";
             try {
                 window.localStorage.removeItem(CONFIG_KEY);
@@ -463,8 +654,19 @@
             setStatus("Token removed from this browser");
             log("Token forgotten.");
         });
+    }
 
-        ["form-category", "form-release", "form-album", "form-artist", "form-date"].forEach(id => {
+    function wireReleaseForm() {
+        $("form-date").value = new Date().toISOString().slice(0, 10);
+        $("form-category").innerHTML = CORE.CATEGORIES
+            .map(category => `<option value="${escapeHtml(category)}">${escapeHtml(category)}</option>`)
+            .join("");
+        $("form-label").value = CORE.DEFAULT_LABEL;
+        $("opt-branchname").value = CORE.suggestBranchName("release");
+        renderTracks();
+        wireTrackRows();
+
+        ["form-category", "form-release", "form-album", "form-artist", "form-date", "form-label", "form-description", "form-performers", "form-producers", "form-writers", "form-genre"].forEach(id => {
             $(id).addEventListener("change", () => {
                 state.plan = null;
                 $("btn-import").disabled = true;
@@ -501,8 +703,7 @@
             });
         });
         dropzone.addEventListener("drop", event => {
-            const dropped = Array.from(event.dataTransfer.files || []);
-            addFiles(dropped);
+            addFiles(event.dataTransfer.files);
         });
 
         $("btn-plan").addEventListener("click", () => {
@@ -515,9 +716,37 @@
         });
 
         $("btn-import").addEventListener("click", runImport);
-
-        log("Importer ready. Connect a token to load the catalogue.");
     }
+
+    function init() {
+        loadConfig();
+        fillConfigInputs();
+        wireShell();
+        wireReleaseForm();
+        defaultBranchField("photos", "epk-photos");
+        defaultBranchField("videos", "epk-videos");
+        defaultBranchField("links", "all-links");
+        log("Control Room ready. Connect a token to load the live data.");
+        switchView("overview");
+    }
+
+    window.Admin = {
+        state,
+        log,
+        setStatus,
+        setBusy,
+        gh,
+        ghOrNull,
+        readJson,
+        commitWrites,
+        publish,
+        publishSettings,
+        renderPlan,
+        registerView,
+        switchView,
+        refreshOverview,
+        escapeHtml
+    };
 
     document.addEventListener("DOMContentLoaded", init);
 })();
