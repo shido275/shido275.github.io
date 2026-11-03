@@ -16,7 +16,8 @@
     background: #000;
 }
 
-.live-embed iframe {
+.live-embed iframe,
+.live-embed .live-video {
     position: absolute;
     inset: 0;
     width: 100%;

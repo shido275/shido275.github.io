@@ -1,7 +1,14 @@
 {
   "channel": "https://rumble.com/user/yaboishido",
-  "live": false,
-  "stream": null,
+  "live": true,
+  "stream": {
+    "id": "449534840",
+    "title": "wass doin",
+    "hlsUrl": "https://rumble.com/live-hls-dvr/Cc0wuTWozBw/playlist.m3u8",
+    "pageUrl": "https://rumble.com/v7htg8e-wass-doin.html",
+    "thumb": "https://hugh.cdn.rumble.cloud/video/fww1/ff/s8/6/U/r/Y/a/UrYaB.OvCc.17.jpg",
+    "startedAt": "2026-11-03T19:32:20+00:00"
+  },
   "lastStream": null,
-  "updatedAt": ""
+  "updatedAt": "2026-11-03T21:07:57Z"
 }

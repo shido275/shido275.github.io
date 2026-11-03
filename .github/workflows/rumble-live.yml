@@ -1,14 +1,9 @@
-# Polls Rumble's Live Stream API and commits live.json, which the site reads.
+# Polls the Rumble channel and commits live.json, which the site reads.
 #
-# Why a workflow instead of a browser call: Rumble's API sends no CORS headers
-# (so api calls from shido275.github.io are blocked), and its payload contains
-# the RTMP stream key. Running here keeps the key out of the public site and
-# lets the API URL live in a repository secret.
-#
-# One-time setup:
-#   Settings -> Secrets and variables -> Actions -> New repository secret
-#   Name:  RUMBLE_LIVE_API
-#   Value: the full https://rumble.com/-livestream-api/get-data?key=... URL
+# Why a workflow instead of a browser call: rumble.com sends no CORS headers,
+# so shido275.github.io cannot fetch the channel itself. Running here keeps the
+# read server-side. The poller needs no API key or secret: it reads the public
+# channel page and keeps only the fields the player uses.
 #
 # GitHub schedules run on a best-effort basis and can be delayed by several
 # minutes under load, so expect the badge to lag a little behind the stream.
@@ -33,9 +28,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Poll the Rumble live API
-        env:
-          RUMBLE_LIVE_API: ${{ secrets.RUMBLE_LIVE_API }}
+      - name: Poll the Rumble channel page
         run: node scripts/rumble-live.js
 
       - name: Commit live.json when the state changed

@@ -2,19 +2,24 @@
 /* ==========================================================================
    Rumble live status poller.
 
-   Rumble's Live Stream API answers only to direct HTTP requests: it sends no
-   CORS headers, so a page on shido275.github.io cannot fetch it, and its
-   payload contains `stream_key` (the RTMP ingest secret). That is why this
-   runs in a GitHub Action instead of the browser:
+   Reads the public channel page and writes the sanitised live.json the site
+   already fetches. Two things make this shape necessary:
 
-     API (secret) -> this script -> live.json (public, sanitised) -> site
+     1. The page cannot ask Rumble itself: rumble.com sends no CORS headers, so
+        a fetch from shido275.github.io is blocked.
+     2. Rumble's iframe embed is not usable: rumble.com/embed/<id>/ answers
+        410 Gone without a publisher id, and the channel page never exposes
+        one. The stream's HLS playlist, by contrast, is served with
+        `access-control-allow-origin: *`, so the site plays it in a <video>.
 
-   Only whitelisted fields are copied out. `stream_key`, chat messages,
-   follower names and subscriber details never reach the repo.
+   The channel page embeds its state as JSON, including a video object with
+   live/permalink/hls fields. That object is what this reads; nothing is
+   scraped from rendered markup, and no API key or stream key is involved.
 
    Usage:
-     node scripts/rumble-live.js                  # fetch RUMBLE_LIVE_API
-     node scripts/rumble-live.js --input file.json # parse a saved payload
+     node scripts/rumble-live.js                    # fetch the channel page
+     node scripts/rumble-live.js --input page.html  # parse a saved page
+     node scripts/rumble-live.js --channel <url>    # another channel
    ========================================================================== */
 "use strict";
 
@@ -24,55 +29,125 @@ const path = require("node:path");
 const ROOT = path.join(__dirname, "..");
 const OUT_PATH = path.join(ROOT, "live.json");
 const DEFAULT_CHANNEL = "https://rumble.com/user/yaboishido";
+const USER_AGENT = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36";
 
 function parseArgs(argv) {
-    const args = { input: "" };
+    const args = { input: "", channel: "" };
     for (let index = 0; index < argv.length; index += 1) {
         if (argv[index] === "--input") args.input = argv[index + 1] || "";
+        if (argv[index] === "--channel") args.channel = argv[index + 1] || "";
     }
     return args;
 }
 
-async function readPayload(inputFile) {
-    if (inputFile) {
-        return JSON.parse(fs.readFileSync(inputFile, "utf8"));
-    }
-    const url = process.env.RUMBLE_LIVE_API;
+async function readPage(args) {
+    if (args.input) return fs.readFileSync(args.input, "utf8");
+
+    const url = args.channel || process.env.RUMBLE_CHANNEL || DEFAULT_CHANNEL;
     const response = await fetch(url, {
-        headers: { Accept: "application/json", "User-Agent": "shido275-site-live-status" }
+        headers: { Accept: "text/html", "User-Agent": USER_AGENT }
     });
-    if (!response.ok) throw new Error(`Rumble API returned ${response.status}`);
-    return response.json();
+    if (!response.ok) throw new Error(`Rumble channel page returned ${response.status}`);
+    return response.text();
+}
+
+/* Walk the page text from `start` to the brace that closes it, ignoring braces
+   inside string literals so a title such as `{live}` cannot unbalance the scan. */
+function matchBrace(text, start) {
+    let depth = 0;
+    let quote = null;
+    let escaped = false;
+
+    for (let index = start; index < text.length; index += 1) {
+        const character = text[index];
+
+        if (quote) {
+            if (escaped) escaped = false;
+            else if (character === "\\") escaped = true;
+            else if (character === quote) quote = null;
+            continue;
+        }
+
+        if (character === '"') {
+            quote = character;
+            continue;
+        }
+
+        if (character === "{") depth += 1;
+        else if (character === "}") {
+            depth -= 1;
+            if (depth === 0) return index;
+        }
+    }
+
+    return -1;
+}
+
+/* Every video object the page embeds, as parsed data. */
+function videoObjects(html) {
+    const marker = '"object_type":"video"';
+    const objects = [];
+    let at = html.indexOf(marker);
+
+    while (at !== -1) {
+        const start = html.lastIndexOf("{", at);
+        if (start === -1) break;
+
+        const end = matchBrace(html, start);
+        if (end === -1) {
+            at = html.indexOf(marker, at + marker.length);
+            continue;
+        }
+
+        try {
+            const value = JSON.parse(html.slice(start, end + 1));
+            if (value && typeof value === "object" && value.object_type === "video") objects.push(value);
+        } catch {
+            // Not a JSON block we can read; try the next one.
+        }
+        at = html.indexOf(marker, end);
+    }
+
+    return objects;
 }
 
 function text(value, max) {
-    return String(value == null ? "" : value)
-        .replace(/\s+/g, " ")
-        .trim()
-        .slice(0, max);
+    return String(value == null ? "" : value).replace(/\s+/g, " ").trim().slice(0, max);
 }
 
-/* Whitelist, deliberately. Anything not named here is dropped, including the
-   stream key and everything under `chat`. */
+function hlsOf(entry) {
+    const videos = Array.isArray(entry.videos) ? entry.videos : [];
+    const match = videos.find(video => video && typeof video.url === "string" && /\.m3u8(\?|$)/.test(video.url));
+    return match ? match.url : "";
+}
+
 function toStream(entry) {
-    const id = text(entry && entry.id, 48);
-    const categories = (entry && entry.categories) || {};
-    const primary = categories.primary || {};
+    const permalink = text(entry.permalink_id, 48);
+    const pageUrl = text(entry.url, 240) || (permalink ? `https://rumble.com/${permalink}.html` : "");
+
     return {
-        id,
-        title: text(entry && entry.title, 120),
-        createdOn: text(entry && entry.created_on, 40),
-        embedUrl: id ? `https://rumble.com/embed/${encodeURIComponent(id)}/` : "",
-        pageUrl: id ? `https://rumble.com/${encodeURIComponent(id)}.html` : "",
-        category: text(primary.title, 40)
+        id: text(entry.id, 48),
+        title: text(entry.title, 120),
+        hlsUrl: hlsOf(entry),
+        pageUrl,
+        thumb: text(entry.thumb, 240),
+        startedAt: text(entry.live_streamed_on, 40)
     };
 }
 
-function buildDoc(payload, previous) {
+/* Newest upload at or below the live one, used for the offline card. */
+function newestVideo(objects) {
+    const dated = objects
+        .filter(entry => entry && entry.title && (entry.url || entry.permalink_id))
+        .map(entry => ({ entry, at: text(entry.upload_date || entry.live_streamed_on, 40) }))
+        .sort((a, b) => String(b.at).localeCompare(String(a.at)));
+    return dated.length ? dated[0].entry : null;
+}
+
+function buildDoc(objects, previous) {
     const previousDoc = previous && typeof previous === "object" ? previous : {};
     const channel = text(previousDoc.channel, 200) || DEFAULT_CHANNEL;
-    const streams = Array.isArray(payload && payload.livestreams) ? payload.livestreams : [];
-    const liveEntry = streams.find(entry => entry && entry.is_live) || null;
+    const liveEntry = objects.find(entry => entry.live === true && hlsOf(entry)) || null;
 
     const previousStream = previousDoc.stream && previousDoc.stream.id ? previousDoc.stream : null;
     const previousLast = previousDoc.lastStream && previousDoc.lastStream.id ? previousDoc.lastStream : null;
@@ -88,12 +163,13 @@ function buildDoc(payload, previous) {
         };
     }
 
-    // Off air: the newest thing we know about becomes the "last stream" card.
+    // Off air: the most recent broadcast we know about becomes the "last" card.
+    const fallback = newestVideo(objects);
     return {
         channel,
         live: false,
         stream: null,
-        lastStream: previousStream || previousLast
+        lastStream: previousStream || previousLast || (fallback ? toStream(fallback) : null)
     };
 }
 
@@ -110,17 +186,18 @@ function stateOf(doc) {
 async function main() {
     const args = parseArgs(process.argv.slice(2));
 
-    if (!args.input && !process.env.RUMBLE_LIVE_API) {
-        console.log("RUMBLE_LIVE_API is not configured, so there is nothing to poll.");
-        console.log("Add it under Settings -> Secrets and variables -> Actions -> New repository secret.");
+    let html;
+    try {
+        html = await readPage(args);
+    } catch (error) {
+        console.error(`Could not read the Rumble channel page: ${error.message}`);
+        process.exitCode = 1;
         return;
     }
 
-    let payload;
-    try {
-        payload = await readPayload(args.input);
-    } catch (error) {
-        console.error(`Could not read the Rumble live API: ${error.message}`);
+    const objects = videoObjects(html);
+    if (!objects.length) {
+        console.error("No video data found on the channel page; leaving live.json alone.");
         process.exitCode = 1;
         return;
     }
@@ -134,7 +211,7 @@ async function main() {
         }
     }
 
-    const next = buildDoc(payload, previous);
+    const next = buildDoc(objects, previous);
 
     if (previous && stateOf(previous) === stateOf(next)) {
         console.log("Live status unchanged; live.json left alone.");
