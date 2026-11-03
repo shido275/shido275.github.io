@@ -16,6 +16,10 @@
    live/permalink/hls fields. That object is what this reads; nothing is
    scraped from rendered markup, and no API key or stream key is involved.
 
+   Rumble's edge refuses datacenter networks: GitHub's runners get HTTP 403.
+   On that response the poller skips the run quietly rather than failing, so
+   live.json simply stays as it was.
+
    Usage:
      node scripts/rumble-live.js                    # fetch the channel page
      node scripts/rumble-live.js --input page.html  # parse a saved page
@@ -47,6 +51,16 @@ async function readPage(args) {
     const response = await fetch(url, {
         headers: { Accept: "text/html", "User-Agent": USER_AGENT }
     });
+
+    /* Rumble's edge refuses datacenter IPs: GitHub's runners get 403 from both
+       the channel page and the API. That is a property of where this runs, not
+       a broken poll, so it exits cleanly instead of failing every five minutes.
+       Run it from a residential network (or a host Rumble accepts) and it works. */
+    if (response.status === 403 || response.status === 401 || response.status === 429) {
+        const error = new Error(`Rumble refused this network (HTTP ${response.status})`);
+        error.blocked = true;
+        throw error;
+    }
     if (!response.ok) throw new Error(`Rumble channel page returned ${response.status}`);
     return response.text();
 }
@@ -190,6 +204,11 @@ async function main() {
     try {
         html = await readPage(args);
     } catch (error) {
+        if (error.blocked) {
+            console.log(`Skipping this run: ${error.message}.`);
+            console.log("live.json is unchanged. Update it from a network Rumble accepts, or edit it by hand.");
+            return;
+        }
         console.error(`Could not read the Rumble channel page: ${error.message}`);
         process.exitCode = 1;
         return;
