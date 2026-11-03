@@ -1,0 +1,51 @@
+# Polls Rumble's Live Stream API and commits live.json, which the site reads.
+#
+# Why a workflow instead of a browser call: Rumble's API sends no CORS headers
+# (so api calls from shido275.github.io are blocked), and its payload contains
+# the RTMP stream key. Running here keeps the key out of the public site and
+# lets the API URL live in a repository secret.
+#
+# One-time setup:
+#   Settings -> Secrets and variables -> Actions -> New repository secret
+#   Name:  RUMBLE_LIVE_API
+#   Value: the full https://rumble.com/-livestream-api/get-data?key=... URL
+#
+# GitHub schedules run on a best-effort basis and can be delayed by several
+# minutes under load, so expect the badge to lag a little behind the stream.
+
+name: Rumble live status
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: rumble-live
+  cancel-in-progress: true
+
+jobs:
+  poll:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Poll the Rumble live API
+        env:
+          RUMBLE_LIVE_API: ${{ secrets.RUMBLE_LIVE_API }}
+        run: node scripts/rumble-live.js
+
+      - name: Commit live.json when the state changed
+        run: |
+          if git diff --quiet -- live.json; then
+            echo "Live status unchanged; nothing to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add live.json
+          git commit -m "Update Rumble live status"
+          git push
