@@ -1,14 +1,19 @@
 /* ==========================================================================
-   Manage - delete what is already published.
+   Manage - reorder and delete what is already published.
 
    Reads the branch once (catalogue, EPK media, links and every blob path),
-   stages deletions in this browser, then commits them together: tree entries
-   with a null sha remove the files while the indexes that pointed at them are
+   stages the changes in this browser, then commits them together: tree entries
+   with a null sha remove files while the indexes that pointed at them are
    rewritten in the same commit. Nothing leaves the site until that commit
-   lands, and Reset throws the staged deletions away.
+   lands, and Reset throws the staged changes away.
 
-   Deleting is the one thing the shared publisher cannot do, so this tool
-   builds its own tree -> commit -> ref sequence through Admin.gh.
+   Reordering follows what the site actually reads:
+     - tracks  -> music-manifest.json trackNumber (site.js sorts by it)
+     - photos  -> epk-media.json photos order (the slideshow plays in order)
+     - videos  -> epk-media.json videos order
+     - links   -> links.json order inside each group
+   Release order on the site comes from release dates, not the manifest, so
+   releases are not draggable here.
    ========================================================================== */
 (function () {
     "use strict";
@@ -72,6 +77,24 @@
         return `${String(filePath).replace(/\.[^./]*$/, "")}.json`;
     }
 
+    // The order site.js itself uses: trackNumber, then title.
+    function orderedTracks(item) {
+        return [...item.tracks].sort((a, b) => {
+            const numA = Number(a.trackNumber || 0);
+            const numB = Number(b.trackNumber || 0);
+            if (numA !== numB) return numA - numB;
+            return String(a.title || "").localeCompare(String(b.title || ""));
+        });
+    }
+
+    function moveWithin(list, from, to) {
+        if (!Array.isArray(list)) return false;
+        if (to < 0 || to >= list.length || from === to) return false;
+        const [item] = list.splice(from, 1);
+        list.splice(to, 0, item);
+        return true;
+    }
+
     /* ------------------------------------------------------------------ load */
 
     async function listRepoPaths() {
@@ -85,7 +108,7 @@
     async function loadAll(force) {
         if (manage.loaded && !force) return;
         if (!Admin.state.config.token) {
-            note("Connect a token to manage what is already published.");
+            note("Unlock the dashboard and connect a token to manage what is already published.");
             return;
         }
         try {
@@ -175,6 +198,26 @@
         note(`Staged "${label}" for deletion.`);
     }
 
+    function moveTrack(releaseIndex, position, offset) {
+        const item = CORE.listReleases(manage.manifest)[releaseIndex];
+        if (!item) return;
+
+        const tracks = orderedTracks(item);
+        const to = position + offset;
+        if (to < 0 || to >= tracks.length) return;
+        if (!moveWithin(tracks, position, to)) return;
+
+        // site.js orders a release by trackNumber, so the numbers are the order.
+        if (item.category !== "Singles") {
+            tracks.forEach((track, index) => {
+                track.trackNumber = index + 1;
+            });
+        }
+        manage.dirty.manifest = true;
+        render();
+        note(`Moved "${tracks[to].title || CORE.baseName(tracks[to].path || "")}" to ${to + 1} of ${tracks.length}.`);
+    }
+
     function deletePhoto(index) {
         const photo = manage.media.photos[index];
         if (!photo) return;
@@ -191,6 +234,13 @@
         if (removable) stage(photo.src);
         manage.dirty.media = true;
         render();
+    }
+
+    function movePhoto(index, offset) {
+        if (!moveWithin(manage.media.photos, index, index + offset)) return;
+        manage.dirty.media = true;
+        render();
+        note(`Photo moved to position ${index + offset + 1}.`);
     }
 
     function deleteVideo(index) {
@@ -210,6 +260,13 @@
         render();
     }
 
+    function moveVideo(index, offset) {
+        if (!moveWithin(manage.media.videos, index, index + offset)) return;
+        manage.dirty.media = true;
+        render();
+        note(`Video moved to position ${index + offset + 1}.`);
+    }
+
     function deleteLink(group, index) {
         const list = manage.links[group];
         if (!Array.isArray(list)) return;
@@ -223,6 +280,14 @@
         note(`${item.label || item.url} removed from the plan.`);
     }
 
+    function moveLink(group, index, offset) {
+        const list = manage.links[group];
+        if (!moveWithin(list, index, index + offset)) return;
+        manage.dirty.links = true;
+        render();
+        note(`${GROUP_LABELS[group] || group}: "${list[index + offset].label || ""}" moved to ${index + offset + 1}.`);
+    }
+
     /* ---------------------------------------------------------------- render */
 
     function fileBadge(path) {
@@ -230,6 +295,19 @@
         return isDeletablePath(path)
             ? `<code class="manage-path">${esc(path)}</code>`
             : `<code class="manage-path manage-path--keep" title="The page's fallback markup still points at this file">${esc(path)} - kept</code>`;
+    }
+
+    function actions(buttons) {
+        return `<span class="manage-actions">${buttons.join("")}</span>`;
+    }
+
+    function arrowButtons(collection, index, disabled) {
+        const attr = disabled ? " disabled" : "";
+        const up = `<button class="button ghost" type="button" data-${collection}-move="-1" data-index="${index}"
+            aria-label="Move up" title="Move up"${attr}>&uarr;</button>`;
+        const down = `<button class="button ghost" type="button" data-${collection}-move="1" data-index="${index}"
+            aria-label="Move down" title="Move down"${attr}>&darr;</button>`;
+        return [up, down];
     }
 
     function renderReleases() {
@@ -240,31 +318,42 @@
             return;
         }
 
-        container.innerHTML = `<div class="manage-list">${releases.map((item, index) => `
+        container.innerHTML = `<div class="manage-list">${releases.map((item, index) => {
+            const tracks = orderedTracks(item);
+            const single = item.category === "Singles" || tracks.length < 2;
+            return `
             <article class="manage-card">
                 <div class="manage-card__head">
                     <div class="manage-card__title">
                         <strong>${esc(item.release)}</strong>
-                        <small>${esc(item.category)} - ${item.tracks.length} track${item.tracks.length === 1 ? "" : "s"}</small>
+                        <small>${esc(item.category)} - ${tracks.length} track${tracks.length === 1 ? "" : "s"}</small>
                     </div>
                     <button class="button danger" type="button" data-release-delete="${index}">Delete release</button>
                 </div>
                 <details>
                     <summary>Tracks</summary>
                     <ul class="manage-tracks">
-                        ${item.tracks.map((track, position) => `
+                        ${tracks.map((track, position) => `
                             <li>
-                                <span class="manage-tracks__num">${esc(track.trackNumber || position + 1)}</span>
+                                <span class="manage-tracks__num">${esc(single ? position + 1 : track.trackNumber || position + 1)}</span>
                                 <span class="manage-tracks__title">${esc(track.title || CORE.baseName(track.path || ""))}</span>
                                 ${fileBadge(track.path)}
-                                <button class="button ghost" type="button" data-track-delete="${index}:${position}"
-                                    aria-label="Delete ${esc(track.title || track.path || "")}">Delete</button>
+                                ${actions([
+                                    `<button class="button ghost" type="button" data-track-move="-1" data-release="${index}" data-position="${position}"
+                                        aria-label="Move up" title="Move up"${single ? " disabled" : ""}>&uarr;</button>`,
+                                    `<button class="button ghost" type="button" data-track-move="1" data-release="${index}" data-position="${position}"
+                                        aria-label="Move down" title="Move down"${single ? " disabled" : ""}>&darr;</button>`,
+                                    `<button class="button ghost" type="button" data-track-delete="${index}:${position}"
+                                        aria-label="Delete ${esc(track.title || track.path || "")}">Delete</button>`
+                                ])}
                             </li>
                         `).join("")}
                     </ul>
                 </details>
+                ${single ? `<p class="muted manage-note">Track order follows the track numbers; a single has nothing to reorder.</p>` : ""}
             </article>
-        `).join("")}</div>`;
+        `;
+        }).join("")}</div>`;
     }
 
     function renderPhotos() {
@@ -284,7 +373,10 @@
                     <strong>${esc(photo.caption || CORE.baseName(photo.src || "") || `Photo ${index + 1}`)}</strong>
                     ${fileBadge(photo.src)}
                 </div>
-                <button class="button danger" type="button" data-photo-delete="${index}">Delete</button>
+                ${actions([
+                    ...arrowButtons("photo", index, photos.length < 2),
+                    `<button class="button danger" type="button" data-photo-delete="${index}">Delete</button>`
+                ])}
             </div>
         `).join("")}</div>`;
     }
@@ -305,7 +397,10 @@
                     <small>${esc([video.kind, video.venue, video.date].filter(Boolean).join(" - "))}</small>
                     ${video.url ? `<code class="manage-path">${esc(video.url)}</code>` : ""}
                 </div>
-                <button class="button danger" type="button" data-video-delete="${index}">Delete</button>
+                ${actions([
+                    ...arrowButtons("video", index, videos.length < 2),
+                    `<button class="button danger" type="button" data-video-delete="${index}">Delete</button>`
+                ])}
             </div>
         `).join("")}</div>`;
     }
@@ -325,11 +420,17 @@
                     <ul class="manage-tracks">
                         ${manage.links[group].map((item, index) => `
                             <li>
-                                <span class="manage-tracks__num">&nbsp;</span>
+                                <span class="manage-tracks__num">${index + 1}</span>
                                 <span class="manage-tracks__title">${esc(item.label || "")}</span>
                                 <code class="manage-path">${esc(item.url || "")}</code>
-                                <button class="button ghost" type="button" data-link-delete="${group}:${index}"
-                                    aria-label="Delete ${esc(item.label || item.url || "")}">Delete</button>
+                                ${actions([
+                                    `<button class="button ghost" type="button" data-link-move="-1" data-group="${group}" data-index="${index}"
+                                        aria-label="Move up" title="Move up"${manage.links[group].length < 2 ? " disabled" : ""}>&uarr;</button>`,
+                                    `<button class="button ghost" type="button" data-link-move="1" data-group="${group}" data-index="${index}"
+                                        aria-label="Move down" title="Move down"${manage.links[group].length < 2 ? " disabled" : ""}>&darr;</button>`,
+                                    `<button class="button ghost" type="button" data-link-delete="${group}:${index}"
+                                        aria-label="Delete ${esc(item.label || item.url || "")}">Delete</button>`
+                                ])}
                             </li>
                         `).join("")}
                     </ul>
@@ -345,13 +446,16 @@
         const files = manage.trash.length;
         const lists = Object.keys(manage.dirty).filter(key => manage.dirty[key]).length;
         if (!files && !lists) return "Nothing marked";
-        return `${files} file(s), ${lists} list(s) to change`;
+        const parts = [];
+        if (lists) parts.push(`${lists} list(s) changed`);
+        if (files) parts.push(`${files} file(s) deleted`);
+        return parts.join(", ");
     }
 
     function render() {
         if (!manage.loaded) {
             ["manage-releases", "manage-photos", "manage-videos", "manage-links"].forEach(id => {
-                $(id).innerHTML = `<p class="muted">Load the published items to see what can be deleted.</p>`;
+                $(id).innerHTML = `<p class="muted">Load the published items to reorder or delete them.</p>`;
             });
             status("Not loaded");
             return;
@@ -378,10 +482,11 @@
         });
 
         if (manage.dirty.manifest) {
+            // Written in the order held here; the site sorts releases and tracks.
             writes.push({
                 path: CORE.MANIFEST_PATH,
                 kind: "manifest",
-                text: `${JSON.stringify(CORE.sortManifest(manage.manifest), null, 2)}\n`
+                text: `${JSON.stringify(manage.manifest, null, 2)}\n`
             });
         }
         if (manage.dirty.media) {
@@ -399,7 +504,7 @@
             });
         }
 
-        if (!writes.length) throw new Error("Nothing is marked for deletion yet - use a Delete button above first.");
+        if (!writes.length) throw new Error("Nothing is marked yet - reorder or delete something above first.");
 
         return {
             writes,
@@ -421,10 +526,10 @@
 
         $("manage-output").innerHTML = `
             <div class="plan-summary">
-                <span><strong>${plan.deletedFiles}</strong> file(s) deleted</span>
                 <span><strong>${plan.listCount}</strong> list(s) rewritten</span>
+                <span><strong>${plan.deletedFiles}</strong> file(s) deleted</span>
             </div>
-            <p class="ok-line">Nothing leaves the site until this commit lands.</p>
+            <p class="ok-line">Nothing changes on the site until this commit lands.</p>
             <details class="plan-files" open>
                 <summary>Changes</summary>
                 <table class="track-table">
@@ -441,7 +546,7 @@
         const parts = [];
         if (files) parts.push(`${files} file${files === 1 ? "" : "s"}`);
         if (lists) parts.push(`${lists} list${lists === 1 ? "" : "s"}`);
-        return parts.length ? `Remove ${parts.join(" and ")} from the site` : "Prune site content";
+        return parts.length ? `Update ${parts.join(" and ")} in the site` : "Update site content";
     }
 
     // Blobs -> tree (null sha for deletions) -> commit -> ref, as one commit.
@@ -511,7 +616,7 @@
 
     async function publish() {
         if (!Admin.state.config.token) {
-            note("Connect a token first - opening Connect.");
+            note("Unlock the dashboard and connect a token first.");
             Admin.switchView("settings");
             return null;
         }
@@ -520,7 +625,7 @@
         try {
             plan = buildPlan();
         } catch (error) {
-            note(`Delete plan failed: ${error.message}`);
+            note(`Plan failed: ${error.message}`);
             $("manage-output").innerHTML = `<p class="warn-list">${esc(error.message)}</p>`;
             return null;
         }
@@ -529,8 +634,8 @@
         const settings = Admin.publishSettings("manage");
         const message = settings.message || defaultMessage();
 
-        if (!settings.dryRun && !window.confirm(`Delete ${plan.deletedFiles} file(s) and rewrite ${plan.listCount} list(s) on ${Admin.state.config.owner}/${Admin.state.config.repo} branch "${settings.branch}"?`)) {
-            note("Deletion cancelled.");
+        if (!settings.dryRun && !window.confirm(`Commit ${plan.writes.length} change(s) to ${Admin.state.config.owner}/${Admin.state.config.repo} branch "${settings.branch}"?`)) {
+            note("Publish cancelled.");
             return null;
         }
 
@@ -545,7 +650,7 @@
             }
             return sha;
         } catch (error) {
-            note(`Delete failed: ${error.message}`);
+            note(`Publish failed: ${error.message}`);
             $("manage-output").insertAdjacentHTML("beforeend", `<p class="warn-list">${esc(error.message)}</p>`);
             return null;
         } finally {
@@ -560,9 +665,9 @@
 
         $("manage-reset").addEventListener("click", async () => {
             if (!manage.loaded) return;
-            if (!window.confirm("Discard the deletions staged in this browser?")) return;
+            if (!window.confirm("Discard the reordering and deletions staged in this browser?")) return;
             await loadAll(true);
-            note("Staged deletions discarded.");
+            note("Staged changes discarded.");
         });
 
         $("manage-releases").addEventListener("click", event => {
@@ -572,26 +677,46 @@
                 if (item) deleteRelease(item);
                 return;
             }
+            const trackMove = event.target.closest("[data-track-move]");
+            if (trackMove) {
+                moveTrack(Number(trackMove.dataset.release), Number(trackMove.dataset.position), Number(trackMove.dataset.trackMove));
+                return;
+            }
             const trackButton = event.target.closest("[data-track-delete]");
             if (trackButton) {
                 const [releaseIndex, trackIndex] = String(trackButton.dataset.trackDelete).split(":").map(Number);
                 const item = CORE.listReleases(manage.manifest)[releaseIndex];
-                const track = item && item.tracks[trackIndex];
+                const track = item && orderedTracks(item)[trackIndex];
                 if (item && track) deleteTrack(item, track);
             }
         });
 
         $("manage-photos").addEventListener("click", event => {
+            const move = event.target.closest("[data-photo-move]");
+            if (move) {
+                movePhoto(Number(move.dataset.index), Number(move.dataset.photoMove));
+                return;
+            }
             const button = event.target.closest("[data-photo-delete]");
             if (button) deletePhoto(Number(button.dataset.photoDelete));
         });
 
         $("manage-videos").addEventListener("click", event => {
+            const move = event.target.closest("[data-video-move]");
+            if (move) {
+                moveVideo(Number(move.dataset.index), Number(move.dataset.videoMove));
+                return;
+            }
             const button = event.target.closest("[data-video-delete]");
             if (button) deleteVideo(Number(button.dataset.videoDelete));
         });
 
         $("manage-links").addEventListener("click", event => {
+            const move = event.target.closest("[data-link-move]");
+            if (move) {
+                moveLink(move.dataset.group, Number(move.dataset.index), Number(move.dataset.linkMove));
+                return;
+            }
             const button = event.target.closest("[data-link-delete]");
             if (!button) return;
             const [group, index] = String(button.dataset.linkDelete).split(":");
@@ -602,7 +727,7 @@
             try {
                 renderPlan(buildPlan());
             } catch (error) {
-                note(`Delete plan failed: ${error.message}`);
+                note(`Plan failed: ${error.message}`);
                 $("manage-output").innerHTML = `<p class="warn-list">${esc(error.message)}</p>`;
             }
         });
