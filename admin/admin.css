@@ -1,0 +1,386 @@
+/* ==========================================================================
+   Release Importer shell - sits on top of ../style.css tokens.
+   ========================================================================== */
+
+body.importer {
+    padding-bottom: 4rem;
+}
+
+body.importer.is-busy {
+    cursor: progress;
+}
+
+.importer-bar {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    justify-content: space-between;
+}
+
+.importer-bar__title {
+    margin: 0;
+    font-family: var(--heading);
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.34em;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+
+.importer-main {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 2.5rem clamp(1rem, 4vw, 2.5rem) 0;
+    display: grid;
+    gap: 1.5rem;
+}
+
+.panel {
+    border: 1px solid var(--line);
+    background: linear-gradient(180deg, rgba(12, 12, 12, 0.92), rgba(6, 6, 6, 0.92));
+    padding: clamp(1.1rem, 3vw, 1.8rem);
+    position: relative;
+}
+
+.panel::before {
+    content: "";
+    position: absolute;
+    top: -1px;
+    left: 0;
+    width: 64px;
+    height: 1px;
+    background: var(--blood);
+}
+
+.panel-head {
+    margin-bottom: 1.25rem;
+}
+
+.panel-head .eyebrow {
+    margin: 0 0 0.35rem;
+}
+
+.panel-head h2 {
+    margin: 0;
+    font-size: clamp(1.5rem, 3.5vw, 2rem);
+}
+
+.field-grid {
+    display: grid;
+    gap: 0.85rem 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    margin-bottom: 1rem;
+}
+
+.field-grid label {
+    display: grid;
+    gap: 0.35rem;
+    font-family: var(--heading);
+    font-size: 0.66rem;
+    font-weight: 600;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+
+.field-grid input,
+.field-grid select {
+    font-family: var(--body);
+    font-size: 1rem;
+    letter-spacing: 0.01em;
+    color: var(--text);
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--line);
+    border-radius: 0;
+    padding: 0.55rem 0.7rem;
+    min-height: 2.6rem;
+    width: 100%;
+}
+
+.field-grid input:focus,
+.field-grid select:focus {
+    outline: none;
+    border-color: rgba(212, 21, 21, 0.6);
+    background: rgba(212, 21, 21, 0.05);
+}
+
+.field-grid input[type="file"] {
+    padding: 0.45rem;
+    font-size: 0.85rem;
+}
+
+.hint,
+.target-line {
+    font-size: 0.92rem;
+    color: var(--muted);
+    margin: 0 0 1rem;
+    max-width: 70ch;
+}
+
+.target-line code,
+.hint code {
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    color: var(--text);
+    background: rgba(255, 255, 255, 0.04);
+    padding: 0.1rem 0.35rem;
+}
+
+.row {
+    display: flex;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.status {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+
+.status[data-tone="ok"] {
+    color: #9ad19a;
+}
+
+.status[data-tone="warn"] {
+    color: #d8b25a;
+}
+
+.status[data-tone="error"] {
+    color: var(--blood);
+}
+
+.dropzone {
+    border: 1px dashed rgba(237, 235, 230, 0.2);
+    padding: 1.6rem 1rem;
+    text-align: center;
+    display: grid;
+    gap: 0.35rem;
+    margin: 0.5rem 0 1rem;
+    transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.dropzone strong {
+    font-family: var(--display);
+    font-size: 1.4rem;
+    font-weight: 400;
+    letter-spacing: 0.02em;
+}
+
+.dropzone span,
+.dropzone .link-label {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+
+.dropzone .link-label {
+    color: var(--text);
+    border-bottom: 1px solid var(--blood);
+    cursor: pointer;
+}
+
+.dropzone.is-hot {
+    border-color: var(--blood);
+    background: rgba(212, 21, 21, 0.06);
+}
+
+.track-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95rem;
+}
+
+.track-table th {
+    font-family: var(--heading);
+    font-size: 0.6rem;
+    font-weight: 600;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--muted);
+    text-align: left;
+    padding: 0.45rem 0.5rem;
+    border-bottom: 1px solid var(--line);
+}
+
+.track-table td {
+    padding: 0.45rem 0.5rem;
+    border-bottom: 1px solid rgba(237, 235, 230, 0.06);
+    vertical-align: middle;
+}
+
+.track-table input {
+    width: 100%;
+    background: transparent;
+    border: 0;
+    border-bottom: 1px solid transparent;
+    color: var(--text);
+    font-family: var(--body);
+    font-size: 1rem;
+    padding: 0.25rem 0;
+}
+
+.track-table input:focus {
+    outline: none;
+    border-bottom-color: var(--blood);
+}
+
+.cell-file {
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.04em;
+    word-break: break-all;
+}
+
+.cell-file small {
+    display: block;
+    opacity: 0.7;
+}
+
+.cell-num {
+    width: 5.5rem;
+}
+
+.cell-num input {
+    text-align: center;
+}
+
+.button.ghost {
+    min-height: 2rem;
+    padding: 0.2rem 0.6rem;
+    font-size: 0.62rem;
+    letter-spacing: 0.14em;
+    border-color: rgba(237, 235, 230, 0.18);
+    background: transparent;
+}
+
+.option-stack {
+    display: grid;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.checkbox {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: var(--mono);
+    font-size: 0.74rem;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+}
+
+.checkbox input {
+    accent-color: var(--blood);
+    width: 1rem;
+    height: 1rem;
+}
+
+.plan-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 1.4rem;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 0.9rem 0;
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    margin-top: 1rem;
+}
+
+.plan-summary strong {
+    color: var(--text);
+}
+
+.warn-list {
+    margin: 0.9rem 0 0;
+    padding-left: 1.1rem;
+    font-size: 0.92rem;
+    color: #d8b25a;
+}
+
+.ok-line {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #9ad19a;
+    margin: 0.9rem 0 0;
+}
+
+.plan-files {
+    margin-top: 1rem;
+}
+
+.plan-files summary {
+    cursor: pointer;
+    font-family: var(--heading);
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 0.4rem 0;
+}
+
+.plan-files code {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    word-break: break-all;
+    color: #d9d5cd;
+}
+
+.log {
+    margin: 0;
+    max-height: 16rem;
+    overflow: auto;
+    background: rgba(0, 0, 0, 0.55);
+    border: 1px solid var(--line);
+    padding: 0.9rem;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    line-height: 1.7;
+    color: #b8b3aa;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+@media (max-width: 720px) {
+    .track-table thead {
+        display: none;
+    }
+
+    .track-table tr {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 0.25rem 0.5rem;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid rgba(237, 235, 230, 0.08);
+    }
+
+    .track-table td {
+        border: 0;
+        padding: 0.1rem 0;
+    }
+
+    .track-table td:first-child,
+    .cell-num {
+        display: none;
+    }
+
+    .track-table td:last-child {
+        grid-column: 2;
+        grid-row: 1;
+        width: auto;
+    }
+}
