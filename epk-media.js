@@ -1,16 +1,20 @@
 /* ==========================================================================
-   EPK media - slideshows for press photos and videos, plus the All Links
-   directory. Reads committed JSON so the dashboard can manage both without
-   touching markup. Every mount point keeps its static fallback: if the data
-   file is missing or empty, nothing here runs and the hand-written markup
-   stays on screen.
+   EPK media - slideshows for press photos and videos, the All Links
+   directory, and the Rumble live status.
+
+   Reads committed JSON so the dashboard (and a scheduled workflow, for live
+   status) can drive the site without touching markup. Every mount point keeps
+   its static fallback: if a data file is missing or empty, nothing here runs
+   and the hand-written markup stays on screen.
    ========================================================================== */
 (function () {
     "use strict";
 
     const MEDIA_URL = "epk-media.json";
     const LINKS_URL = "links.json";
+    const LIVE_URL = "live.json";
     const DEFAULT_INTERVAL = 6000;
+    const LIVE_POLL_MS = 60000;
 
     function escapeHtml(value) {
         return String(value == null ? "" : value).replace(/[&<>"']/g, character => ({
@@ -47,7 +51,7 @@
 
         const slides = photos.map((photo, index) => `
             <figure class="slide${index === 0 ? " is-active" : ""}" data-slide="${index}">
-                <img src="${escapeHtml(photo.src)}" alt="${escapeHtml(photo.alt || photo.caption || "X/i\\D photo")}"
+                <img src="${escapeHtml(photo.src)}" alt="${escapeHtml(photo.alt || photo.caption || "X/iD photo")}"
                     loading="${index === 0 ? "eager" : "lazy"}" decoding="async">
                 ${photo.caption || photo.credit ? `<figcaption>
                     ${photo.caption ? `<span class="slide-caption">${escapeHtml(photo.caption)}</span>` : ""}
@@ -132,6 +136,7 @@
         // Pause while the visitor is reading or tabbing through it.
         const wrapper = root.querySelector(".slideshow");
         ["mouseenter", "focusin"].forEach(name => wrapper.addEventListener(name, stop));
+        ["mouseleave", "focusout"].forEach(name => wrapper.addEventListener(name, stop));
         ["mouseleave", "focusout"].forEach(name => wrapper.addEventListener(name, start));
         document.addEventListener("visibilitychange", () => (document.hidden ? stop() : start()));
 
@@ -301,12 +306,77 @@
         });
     }
 
+    /* -------------------------------------------------------------------- live */
+
+    /*  live.json is written by scripts/rumble-live.js in a scheduled workflow:
+        the Rumble API has no CORS headers and includes the stream key, so the
+        browser never talks to Rumble directly. Three states are supported:
+        live, offline with a last broadcast, and no data at all (static markup
+        is left alone). */
+    function renderLive(doc) {
+        const player = document.querySelector("#live-player");
+        const chat = document.querySelector("#live-chat");
+        if (!player || !doc || typeof doc !== "object") return;
+
+        const channel = escapeHtml(doc.channel || "https://rumble.com/user/yaboishido");
+        const stream = doc.live && doc.stream && doc.stream.embedUrl ? doc.stream : null;
+        const last = doc.lastStream && doc.lastStream.id ? doc.lastStream : null;
+
+        if (stream) {
+            player.classList.add("live-on");
+            player.innerHTML = `
+                <div class="live-embed">
+                    <iframe src="${escapeHtml(stream.embedUrl)}" title="${escapeHtml(stream.title || "Rumble livestream")}"
+                        allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>
+                </div>
+                <div class="live-meta">
+                    <span class="live-badge">Live now</span>
+                    <span class="live-title">${escapeHtml(stream.title || "Rumble livestream")}</span>
+                    <a class="live-link" href="${escapeHtml(stream.pageUrl || channel)}" target="_blank" rel="noopener">Open on Rumble</a>
+                </div>
+            `;
+        } else {
+            player.classList.remove("live-on");
+            player.innerHTML = `
+                <div class="live-offline">
+                    <span class="live-badge live-badge--off">Offline</span>
+                    <p>${last
+                        ? `Last stream: ${escapeHtml(last.title || "untitled")}`
+                        : "No stream is running right now."}</p>
+                    <a class="button primary" href="${channel}" target="_blank" rel="noopener">Watch live on Rumble</a>
+                </div>
+            `;
+        }
+
+        if (chat) {
+            chat.innerHTML = `
+                <div class="live-chat-note">
+                    <p>${stream ? "Chat runs on Rumble while the stream is up." : "Follow on Rumble to catch the next one."}</p>
+                    <a class="live-link" href="${channel}" target="_blank" rel="noopener">Open Rumble</a>
+                </div>
+            `;
+        }
+    }
+
+    async function watchLive() {
+        const doc = await fetchJson(LIVE_URL);
+        renderLive(doc);
+
+        // The workflow refreshes live.json every few minutes; poll lightly.
+        window.setInterval(async () => {
+            if (document.hidden) return;
+            const next = await fetchJson(LIVE_URL);
+            if (next) renderLive(next);
+        }, LIVE_POLL_MS);
+    }
+
     /* -------------------------------------------------------------------- boot */
 
     async function boot() {
         const photoRoot = document.querySelector("#epk-photos");
         const videoRoot = document.querySelector("#epk-videos");
         const linksRoot = document.querySelector("#links-featured");
+        const liveRoot = document.querySelector("#live-player");
 
         if (photoRoot || videoRoot) {
             const media = await fetchJson(MEDIA_URL);
@@ -318,6 +388,10 @@
 
         if (linksRoot) {
             applyLinks(await fetchJson(LINKS_URL));
+        }
+
+        if (liveRoot) {
+            await watchLive();
         }
     }
 
