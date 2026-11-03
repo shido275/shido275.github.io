@@ -1,0 +1,110 @@
+/* ==========================================================================
+   Passcode gate - a sheet over the dashboard until the passcode is entered.
+   Loaded after manage.css; uses the dashboard's own type and colours.
+   ========================================================================== */
+
+body.is-locked {
+    overflow: hidden;
+}
+
+.lock-gate {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    display: grid;
+    place-items: center;
+    padding: 1.5rem;
+    background:
+        radial-gradient(circle at 50% 20%, rgba(214, 69, 69, 0.12), transparent 60%),
+        rgba(6, 6, 6, 0.94);
+    backdrop-filter: blur(6px);
+}
+
+.lock-gate[hidden] {
+    display: none;
+}
+
+.lock-card {
+    width: min(24rem, 100%);
+    display: grid;
+    gap: 0.75rem;
+    padding: 1.6rem 1.5rem 1.4rem;
+    border: 1px solid rgba(237, 235, 230, 0.14);
+    background: rgba(10, 10, 10, 0.96);
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.7);
+}
+
+.lock-card h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    letter-spacing: 0.02em;
+}
+
+.lock-card label {
+    display: grid;
+    gap: 0.3rem;
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+
+.lock-card input {
+    min-height: 2.7rem;
+    padding: 0.55rem 0.7rem;
+    font-family: var(--mono);
+    font-size: 1rem;
+    letter-spacing: 0.18em;
+    color: #fff;
+    background: rgba(0, 0, 0, 0.6);
+    border: 1px solid rgba(237, 235, 230, 0.18);
+}
+
+.lock-card input:focus {
+    outline: none;
+    border-color: rgba(237, 235, 230, 0.45);
+    box-shadow: 0 0 0 2px rgba(214, 69, 69, 0.25);
+}
+
+.lock-hint {
+    margin: 0;
+    font-size: 0.82rem;
+    line-height: 1.55;
+    color: var(--muted);
+}
+
+.lock-message {
+    margin: 0;
+    min-height: 1.1rem;
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.06em;
+    color: #ff9d9d;
+}
+
+.lock-message[data-tone="ok"] {
+    color: #8fd8a8;
+}
+
+.lock-message[data-tone="error"] {
+    color: #ff6b6b;
+}
+
+.lock-card .button {
+    justify-self: start;
+}
+
+#btn-lock {
+    white-space: nowrap;
+}
+
+@media (max-width: 520px) {
+    .lock-card {
+        padding: 1.2rem 1.1rem;
+    }
+
+    .lock-card .button {
+        justify-self: stretch;
+    }
+}
