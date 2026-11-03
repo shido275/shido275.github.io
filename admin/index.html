@@ -5,142 +5,441 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="robots" content="noindex, nofollow">
-    <title>Release Importer | X/i\D</title>
+    <title>Control Room | X/i\D</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="../style.css">
     <link rel="stylesheet" href="admin.css">
 </head>
 
-<body class="importer">
+<body class="admin">
     <div class="noise-layer"></div>
     <div class="scan-layer"></div>
 
-    <header class="site-header importer-bar">
+    <header class="site-header admin-bar">
         <a class="brand" href="../index.html">X/i\D</a>
-        <p class="importer-bar__title">Release Importer</p>
-        <a class="button" href="../index.html#/home">Back to site</a>
+        <p class="admin-bar__title">Control Room</p>
+        <div class="admin-bar__meta">
+            <span class="status" id="conn-status" role="status">Not connected</span>
+            <button class="button ghost" id="btn-log-toggle" type="button" aria-expanded="false">Log</button>
+            <a class="button ghost" href="../index.html#/home">Site</a>
+        </div>
     </header>
 
-    <main class="importer-main">
-        <section class="panel" aria-labelledby="connect-heading">
-            <div class="panel-head">
-                <p class="eyebrow">Step one</p>
-                <h2 id="connect-heading">Connect</h2>
-            </div>
-            <div class="field-grid">
-                <label>Owner
-                    <input id="cfg-owner" autocomplete="off" spellcheck="false" placeholder="shido275">
-                </label>
-                <label>Repository
-                    <input id="cfg-repo" autocomplete="off" spellcheck="false" placeholder="shido275.github.io">
-                </label>
-                <label>Base branch
-                    <input id="cfg-branch" autocomplete="off" spellcheck="false" placeholder="main">
-                </label>
-                <label>Token
-                    <input id="cfg-token" type="password" autocomplete="off" spellcheck="false" placeholder="github_pat_...">
-                </label>
-            </div>
-            <p class="hint">Use a fine-grained token scoped to this one repository with <strong>Contents: Read and
-                    write</strong>. It is kept in this browser's local storage and sent only to
-                <code>api.github.com</code>.</p>
-            <div class="row">
-                <button class="button primary" id="btn-connect" type="button">Save &amp; verify</button>
-                <button class="button" id="btn-forget" type="button">Forget token</button>
-                <span class="status" id="conn-status" role="status">Not connected</span>
-            </div>
-        </section>
+    <div class="admin-shell">
+        <nav class="admin-nav" aria-label="Dashboard sections">
+            <button class="admin-nav__item is-active" type="button" data-view="overview">
+                <span>Overview</span><small>Status</small>
+            </button>
+            <button class="admin-nav__item" type="button" data-view="releases">
+                <span>Releases</span><small>Import audio</small>
+            </button>
+            <button class="admin-nav__item" type="button" data-view="photos">
+                <span>Photos</span><small>EPK slideshow</small>
+            </button>
+            <button class="admin-nav__item" type="button" data-view="videos">
+                <span>Videos</span><small>EPK slideshow</small>
+            </button>
+            <button class="admin-nav__item" type="button" data-view="links">
+                <span>All Links</span><small>Directory</small>
+            </button>
+            <button class="admin-nav__item" type="button" data-view="settings">
+                <span>Connect</span><small>Token</small>
+            </button>
+        </nav>
 
-        <section class="panel" aria-labelledby="release-heading">
-            <div class="panel-head">
-                <p class="eyebrow">Step two</p>
-                <h2 id="release-heading">Release</h2>
-            </div>
-            <div class="field-grid">
-                <label>Category
-                    <select id="form-category"></select>
-                </label>
-                <label>Release folder
-                    <input id="form-release" list="release-list" autocomplete="off" placeholder="STUNTIN SZN">
-                    <datalist id="release-list"></datalist>
-                </label>
-                <label>Album name
-                    <input id="form-album" autocomplete="off" placeholder="Defaults to the release folder">
-                </label>
-                <label>Artist
-                    <input id="form-artist" autocomplete="off" value="X/i\D">
-                </label>
-                <label>Release date
-                    <input id="form-date" type="date">
-                </label>
-                <label>Cover art
-                    <input id="form-cover" type="file" accept=".jpg,.jpeg,.png,.webp,image/*">
-                </label>
-            </div>
+        <main class="admin-main">
+            <!-- ==============================================
+                 OVERVIEW
+                 ============================================== -->
+            <section class="admin-view is-active" id="view-overview" aria-labelledby="overview-title">
+                <div class="panel-head">
+                    <p class="eyebrow">Dashboard</p>
+                    <h1 id="overview-title">Control Room</h1>
+                    <p class="hint">Every part of the site that runs on a committed data file. Pick a tool on the left,
+                        build the change, then publish it in one commit.</p>
+                </div>
 
-            <div class="dropzone" id="dropzone">
-                <strong>Drop audio files</strong>
-                <span>.mp3 - .wav - .m4a - .flac, or
-                    <label class="link-label">browse
-                        <input id="form-audio" type="file" multiple accept=".mp3,.wav,.m4a,.flac,audio/*" hidden>
-                    </label>
-                </span>
-            </div>
+                <div class="stat-grid" aria-live="polite">
+                    <div class="stat-card"><strong id="ov-tracks">-</strong><span>Tracks</span></div>
+                    <div class="stat-card"><strong id="ov-releases">-</strong><span>Releases</span></div>
+                    <div class="stat-card"><strong id="ov-photos">-</strong><span>Photos</span></div>
+                    <div class="stat-card"><strong id="ov-videos">-</strong><span>Videos</span></div>
+                    <div class="stat-card"><strong id="ov-links">-</strong><span>Links</span></div>
+                </div>
 
-            <p class="target-line">Writes to <code id="target-folder">-</code></p>
+                <div class="panel">
+                    <div class="panel-head">
+                        <p class="eyebrow">Shortcuts</p>
+                        <h2>What are we doing?</h2>
+                    </div>
+                    <div class="row">
+                        <button class="button primary" type="button" data-goto="releases">Import a release</button>
+                        <button class="button" type="button" data-goto="photos">Photos</button>
+                        <button class="button" type="button" data-goto="videos">Videos</button>
+                        <button class="button" type="button" data-goto="links">All Links</button>
+                        <button class="button ghost" type="button" id="btn-refresh">Refresh counts</button>
+                    </div>
+                    <p class="hint" id="overview-status">Connect a token to read the live catalogue.</p>
+                </div>
+            </section>
 
-            <table class="track-table">
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>Title</th>
-                        <th>File</th>
-                        <th>Track</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody id="track-rows"></tbody>
-            </table>
-            <p class="muted" id="track-empty">No audio queued yet.</p>
-        </section>
+            <!-- ==============================================
+                 RELEASES
+                 ============================================== -->
+            <section class="admin-view" id="view-releases" aria-labelledby="release-heading">
+                <div class="panel-head">
+                    <p class="eyebrow">Music</p>
+                    <h1 id="release-heading">Release Importer</h1>
+                    <p class="hint">Writes audio, per-track JSON, a release <code>info.json</code> with credits, and the
+                        catalogue in one commit.</p>
+                </div>
 
-        <section class="panel" aria-labelledby="import-heading">
-            <div class="panel-head">
-                <p class="eyebrow">Step three</p>
-                <h2 id="import-heading">Commit</h2>
-            </div>
-            <div class="option-stack">
-                <label class="checkbox"><input type="checkbox" id="opt-dryrun"> Dry run - build the plan, write nothing</label>
-                <label class="checkbox"><input type="checkbox" id="opt-newbranch"> Commit to a new branch instead of the
-                    base branch</label>
-            </div>
-            <div class="field-grid">
-                <label>Branch for this import
-                    <input id="opt-branchname" autocomplete="off" spellcheck="false">
-                </label>
-                <label>Commit message
-                    <input id="opt-message" autocomplete="off">
-                </label>
-            </div>
-            <div class="row">
-                <button class="button primary" id="btn-plan" type="button">Preview plan</button>
-                <button class="button primary" id="btn-import" type="button" disabled>Import release</button>
-            </div>
-            <div id="plan-output" aria-live="polite"></div>
-        </section>
+                <div class="panel">
+                    <div class="field-grid">
+                        <label>Category
+                            <select id="form-category"></select>
+                        </label>
+                        <label>Release folder
+                            <input id="form-release" list="release-list" autocomplete="off" placeholder="STUNTIN SZN">
+                            <datalist id="release-list"></datalist>
+                        </label>
+                        <label>Album name
+                            <input id="form-album" autocomplete="off" placeholder="Defaults to the release folder">
+                        </label>
+                        <label>Artist
+                            <input id="form-artist" autocomplete="off" value="X/i\D">
+                        </label>
+                        <label>Release date
+                            <input id="form-date" type="date">
+                        </label>
+                        <label>Cover art
+                            <input id="form-cover" type="file" accept=".jpg,.jpeg,.png,.webp,image/*">
+                        </label>
+                    </div>
 
-        <section class="panel" aria-labelledby="log-heading">
-            <div class="panel-head">
-                <p class="eyebrow">Trace</p>
-                <h2 id="log-heading">Log</h2>
-            </div>
-            <pre class="log" id="log" aria-live="polite"></pre>
-        </section>
-    </main>
+                    <h3 class="subsection-title">Credits and description</h3>
+                    <p class="hint">This block becomes <code>info.json</code> for the release, which is what the site's
+                        Credits panel reads.</p>
+                    <div class="field-grid">
+                        <label>Performers
+                            <input id="form-performers" autocomplete="off" placeholder="X/i\D, T Swerve">
+                        </label>
+                        <label>Producers
+                            <input id="form-producers" autocomplete="off" placeholder="X/i\D">
+                        </label>
+                        <label>Writers
+                            <input id="form-writers" autocomplete="off" placeholder="X/i\D">
+                        </label>
+                        <label>Label
+                            <input id="form-label" autocomplete="off" placeholder="FAKE Entertainment">
+                        </label>
+                        <label>Genre
+                            <input id="form-genre" autocomplete="off" placeholder="Alternative hip-hop">
+                        </label>
+                        <label class="checkbox checkbox--inline"><input type="checkbox" id="form-explicit"> Explicit
+                            content</label>
+                        <label class="wide">Description
+                            <textarea id="form-description" rows="4"
+                                placeholder="Two or three sentences for the Credits panel and press use."></textarea>
+                        </label>
+                    </div>
+
+                    <div class="dropzone" id="dropzone">
+                        <strong>Drop audio files</strong>
+                        <span>.mp3 - .wav - .m4a - .flac, or
+                            <label class="link-label">browse
+                                <input id="form-audio" type="file" multiple accept=".mp3,.wav,.m4a,.flac,audio/*" hidden>
+                            </label>
+                        </span>
+                    </div>
+
+                    <p class="target-line">Writes to <code id="target-folder">-</code></p>
+
+                    <table class="track-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Title</th>
+                                <th>File</th>
+                                <th>Track</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="track-rows"></tbody>
+                    </table>
+                    <p class="muted" id="track-empty">No audio queued yet.</p>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-head">
+                        <p class="eyebrow">Publish</p>
+                        <h2>Commit</h2>
+                    </div>
+                    <div class="option-stack">
+                        <label class="checkbox"><input type="checkbox" id="opt-dryrun"> Dry run - build the plan, write
+                            nothing</label>
+                        <label class="checkbox"><input type="checkbox" id="opt-newbranch"> Commit to a new branch instead
+                            of the base branch</label>
+                    </div>
+                    <div class="field-grid">
+                        <label>Branch for this import
+                            <input id="opt-branchname" autocomplete="off" spellcheck="false">
+                        </label>
+                        <label>Commit message
+                            <input id="opt-message" autocomplete="off">
+                        </label>
+                    </div>
+                    <div class="row">
+                        <button class="button" id="btn-plan" type="button">Preview plan</button>
+                        <button class="button primary" id="btn-import" type="button" disabled>Import release</button>
+                    </div>
+                    <div id="plan-output" aria-live="polite"></div>
+                </div>
+            </section>
+
+            <!-- ==============================================
+                 PHOTOS
+                 ============================================== -->
+            <section class="admin-view" id="view-photos" aria-labelledby="photos-heading">
+                <div class="panel-head">
+                    <p class="eyebrow">EPK</p>
+                    <h1 id="photos-heading">Photo Slideshow</h1>
+                    <p class="hint">Feeds the <strong>Photos</strong> section of the EPK. New images upload to
+                        <code>assets/photos/</code>; the order below is the order the slideshow plays.</p>
+                </div>
+
+                <div class="panel">
+                    <div class="row">
+                        <button class="button" type="button" id="photos-load">Load current slideshow</button>
+                        <label class="button" for="photos-input">Add images</label>
+                        <input id="photos-input" type="file" accept="image/*" multiple hidden>
+                        <span class="status" id="photos-count">0 photos</span>
+                    </div>
+                    <div class="dropzone" id="photos-dropzone">
+                        <strong>Drop press photos</strong>
+                        <span>.jpg - .png - .webp - .svg</span>
+                    </div>
+                    <div class="media-list" id="photos-list"></div>
+                    <p class="muted" id="photos-empty">No photos queued. Load the current slideshow or add images.</p>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-head">
+                        <p class="eyebrow">Publish</p>
+                        <h2>Commit photos</h2>
+                    </div>
+                    <div class="publish-grid">
+                        <label>Commit message<input id="photos-message" autocomplete="off"></label>
+                        <label>Branch<input id="photos-branch" autocomplete="off" spellcheck="false"></label>
+                        <label class="checkbox"><input type="checkbox" id="photos-dryrun"> Dry run</label>
+                    </div>
+                    <div class="row">
+                        <button class="button" type="button" id="photos-plan">Preview plan</button>
+                        <button class="button primary" type="button" id="photos-publish">Publish photos</button>
+                    </div>
+                    <div id="photos-output" aria-live="polite"></div>
+                </div>
+            </section>
+
+            <!-- ==============================================
+                 VIDEOS
+                 ============================================== -->
+            <section class="admin-view" id="view-videos" aria-labelledby="videos-heading">
+                <div class="panel-head">
+                    <p class="eyebrow">EPK</p>
+                    <h1 id="videos-heading">Video Slideshow</h1>
+                    <p class="hint">Feeds <strong>Music Videos and Performances</strong>. Paste a YouTube or Vimeo link,
+                        or upload a short clip to <code>assets/videos/</code>.</p>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-head">
+                        <p class="eyebrow">Add</p>
+                        <h2>New video</h2>
+                    </div>
+                    <div class="field-grid">
+                        <label>Title
+                            <input id="video-title" autocomplete="off" placeholder="4LLR1Z3 (Official Video)">
+                        </label>
+                        <label>Type
+                            <select id="video-kind"></select>
+                        </label>
+                        <label>Venue / event
+                            <input id="video-venue" autocomplete="off" placeholder="Cyberia, Auckland">
+                        </label>
+                        <label>Date
+                            <input id="video-date" type="date">
+                        </label>
+                        <label class="wide">YouTube or Vimeo link
+                            <input id="video-url" autocomplete="off" placeholder="https://youtu.be/...">
+                        </label>
+                        <label>Or upload a clip
+                            <input id="video-file" type="file" accept="video/*">
+                        </label>
+                        <label class="wide">Note
+                            <input id="video-note" autocomplete="off" placeholder="Shot at the Album listening party">
+                        </label>
+                    </div>
+                    <div class="row">
+                        <button class="button primary" type="button" id="videos-add">Add video</button>
+                        <button class="button" type="button" id="videos-load">Load current slideshow</button>
+                        <span class="status" id="videos-count">0 videos</span>
+                    </div>
+                    <div class="media-list" id="videos-list"></div>
+                    <p class="muted" id="videos-empty">No videos queued.</p>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-head">
+                        <p class="eyebrow">Publish</p>
+                        <h2>Commit videos</h2>
+                    </div>
+                    <div class="publish-grid">
+                        <label>Commit message<input id="videos-message" autocomplete="off"></label>
+                        <label>Branch<input id="videos-branch" autocomplete="off" spellcheck="false"></label>
+                        <label class="checkbox"><input type="checkbox" id="videos-dryrun"> Dry run</label>
+                    </div>
+                    <div class="row">
+                        <button class="button" type="button" id="videos-plan">Preview plan</button>
+                        <button class="button primary" type="button" id="videos-publish">Publish videos</button>
+                    </div>
+                    <div id="videos-output" aria-live="polite"></div>
+                </div>
+            </section>
+
+            <!-- ==============================================
+                 LINKS
+                 ============================================== -->
+            <section class="admin-view" id="view-links" aria-labelledby="links-heading">
+                <div class="panel-head">
+                    <p class="eyebrow">Directory</p>
+                    <h1 id="links-heading">All Links</h1>
+                    <p class="hint">Controls every list on the <code>#/links</code> page. Empty groups keep the built-in
+                        markup on the site; order here is the order visitors see.</p>
+                </div>
+
+                <div class="panel">
+                    <div class="row">
+                        <button class="button" type="button" id="links-load">Load current links</button>
+                        <span class="status" id="links-count">0 links</span>
+                    </div>
+                    <p class="hint">Only <code>https://</code>, <code>mailto:</code>, <code>#</code> routes and relative
+                        paths are accepted.</p>
+
+                    <div class="link-editor" data-group="featured">
+                        <div class="link-editor__head">
+                            <h3>Featured</h3>
+                            <small>Big buttons at the top of the page</small>
+                        </div>
+                        <div class="link-rows" id="rows-featured"></div>
+                        <button class="button ghost" type="button" data-add="featured">Add featured link</button>
+                    </div>
+
+                    <div class="link-editor" data-group="platforms">
+                        <div class="link-editor__head">
+                            <h3>Platforms</h3>
+                            <small>Music and video services</small>
+                        </div>
+                        <div class="link-rows" id="rows-platforms"></div>
+                        <button class="button ghost" type="button" data-add="platforms">Add platform</button>
+                    </div>
+
+                    <div class="link-editor" data-group="socials">
+                        <div class="link-editor__head">
+                            <h3>Socials</h3>
+                            <small>Handles and channels</small>
+                        </div>
+                        <div class="link-rows" id="rows-socials"></div>
+                        <button class="button ghost" type="button" data-add="socials">Add social</button>
+                    </div>
+
+                    <div class="link-editor" data-group="business">
+                        <div class="link-editor__head">
+                            <h3>Business</h3>
+                            <small>Booking, press, support</small>
+                        </div>
+                        <div class="link-rows" id="rows-business"></div>
+                        <button class="button ghost" type="button" data-add="business">Add business link</button>
+                    </div>
+
+                    <div class="link-editor" data-group="quickSocials">
+                        <div class="link-editor__head">
+                            <h3>Hero socials</h3>
+                            <small>The small row under the All Links title</small>
+                        </div>
+                        <div class="link-rows" id="rows-quickSocials"></div>
+                        <button class="button ghost" type="button" data-add="quickSocials">Add hero link</button>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-head">
+                        <p class="eyebrow">Publish</p>
+                        <h2>Commit links</h2>
+                    </div>
+                    <div class="publish-grid">
+                        <label>Commit message<input id="links-message" autocomplete="off"></label>
+                        <label>Branch<input id="links-branch" autocomplete="off" spellcheck="false"></label>
+                        <label class="checkbox"><input type="checkbox" id="links-dryrun"> Dry run</label>
+                    </div>
+                    <div class="row">
+                        <button class="button" type="button" id="links-plan">Preview plan</button>
+                        <button class="button primary" type="button" id="links-publish">Publish links</button>
+                    </div>
+                    <div id="links-output" aria-live="polite"></div>
+                </div>
+            </section>
+
+            <!-- ==============================================
+                 CONNECT
+                 ============================================== -->
+            <section class="admin-view" id="view-settings" aria-labelledby="connect-heading">
+                <div class="panel-head">
+                    <p class="eyebrow">Setup</p>
+                    <h1 id="connect-heading">Connect</h1>
+                    <p class="hint">A fine-grained token scoped to this repository with <strong>Contents: Read and
+                            write</strong>. It stays in this browser and is sent only to <code>api.github.com</code>.</p>
+                </div>
+
+                <div class="panel">
+                    <div class="field-grid">
+                        <label>Owner
+                            <input id="cfg-owner" autocomplete="off" spellcheck="false" placeholder="shido275">
+                        </label>
+                        <label>Repository
+                            <input id="cfg-repo" autocomplete="off" spellcheck="false" placeholder="shido275.github.io">
+                        </label>
+                        <label>Base branch
+                            <input id="cfg-branch" autocomplete="off" spellcheck="false" placeholder="main">
+                        </label>
+                        <label>Token
+                            <input id="cfg-token" type="password" autocomplete="off" spellcheck="false"
+                                placeholder="github_pat_...">
+                        </label>
+                    </div>
+                    <div class="row">
+                        <button class="button primary" id="btn-connect" type="button">Save &amp; verify</button>
+                        <button class="button" id="btn-forget" type="button">Forget token</button>
+                        <span class="status" id="conn-status-settings">Not connected</span>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <div class="admin-logbar" id="logbar" hidden>
+        <div class="admin-logbar__head">
+            <h2>Log</h2>
+            <button class="button ghost" id="log-clear" type="button">Clear</button>
+        </div>
+        <pre class="log" id="log" aria-live="polite"></pre>
+    </div>
 
     <script src="import-core.js"></script>
     <script src="app.js"></script>
+    <script src="media.js"></script>
+    <script src="links.js"></script>
 </body>
 
 </html>
