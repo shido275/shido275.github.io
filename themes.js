@@ -150,7 +150,7 @@
     polish.href = "style-perf.css";
     document.head.appendChild(polish);
 
-    ["feed.js", "background.js", "visualizer.js"].forEach(src => {
+    ["feed.js", "background.js", "visualizer.js", "mobile.js"].forEach(src => {
         const script = document.createElement("script");
         script.src = src;
         script.async = false;
