@@ -131,3 +131,26 @@
 
     load();
 })();
+
+/* ==========================================================================
+   The data layer and the cycled background are pulled in from here so the page
+   keeps the script tags it already had. async=false keeps them in order and
+   delays DOMContentLoaded, so feed.js has wrapped fetch before site.js asks it
+   for anything and background.js has a body to paint behind.
+   ========================================================================== */
+(function () {
+    "use strict";
+    const here = document.currentScript;
+    const anchor = here && here.nextSibling;
+
+    ["feed.js", "background.js"].forEach(src => {
+        const script = document.createElement("script");
+        script.src = src;
+        script.async = false;
+        if (anchor && anchor.parentNode) {
+            anchor.parentNode.insertBefore(script, anchor);
+        } else {
+            document.body.appendChild(script);
+        }
+    });
+})();
