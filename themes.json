@@ -1,0 +1,110 @@
+{
+  "default": "opium",
+  "rotate": false,
+  "themes": [
+    {
+      "id": "opium",
+      "label": "Opium / Gothic",
+      "era": "Current",
+      "note": "Blackletter name, cathedral caps, blood red on black. The site as it stands.",
+      "vars": {
+        "--bg": "#050505",
+        "--bg-2": "#0a0a0a",
+        "--surface": "rgba(10, 10, 10, 0.72)",
+        "--surface-2": "rgba(16, 16, 16, 0.88)",
+        "--text": "#edebe6",
+        "--muted": "#7a766f",
+        "--line": "rgba(237, 235, 230, 0.10)",
+        "--line-active": "rgba(237, 235, 230, 0.34)",
+        "--blood": "#d41515",
+        "--blood-soft": "rgba(212, 21, 21, 0.32)",
+        "--cyan": "#edebe6",
+        "--gold": "#b6b1a7",
+        "--rose": "#d41515",
+        "--green": "#8e8a82",
+        "--shadow": "0 30px 70px rgba(0, 0, 0, 0.9)",
+        "--shadow-neon": "none",
+        "--brand-glow": "rgba(212, 21, 21, 0.30)",
+        "--header-line": "rgba(212, 21, 21, 0.22)"
+      }
+    },
+    {
+      "id": "neon",
+      "label": "Neon Cyberpunk",
+      "era": "Original theme",
+      "note": "The first look, recovered from the pre-gothic stylesheet: cyan and magenta on near-black navy, with a hard neon glow.",
+      "vars": {
+        "--bg": "#05050a",
+        "--bg-2": "#0a0a12",
+        "--surface": "rgba(10, 10, 18, 0.85)",
+        "--surface-2": "rgba(18, 18, 30, 0.9)",
+        "--text": "#f0f3f8",
+        "--muted": "#8d9bb0",
+        "--line": "rgba(0, 240, 255, 0.15)",
+        "--line-active": "rgba(0, 240, 255, 0.45)",
+        "--cyan": "#00f0ff",
+        "--gold": "#ffe600",
+        "--rose": "#ff0055",
+        "--green": "#39ff14",
+        "--blood": "#ff0055",
+        "--blood-soft": "rgba(255, 0, 85, 0.35)",
+        "--shadow": "0 10px 30px rgba(0, 0, 0, 0.7), 0 0 15px rgba(0, 240, 255, 0.1)",
+        "--shadow-neon": "0 0 15px rgba(0, 240, 255, 0.3)",
+        "--brand-glow": "rgba(0, 240, 255, 0.35)",
+        "--header-line": "rgba(0, 240, 255, 0.25)"
+      }
+    },
+    {
+      "id": "terminal",
+      "label": "Neon Terminal",
+      "era": "Neon variant",
+      "note": "The same neon frame with the green token leading instead of cyan - the old palette's second colour, promoted.",
+      "vars": {
+        "--bg": "#04060a",
+        "--bg-2": "#080c0a",
+        "--surface": "rgba(6, 14, 10, 0.85)",
+        "--surface-2": "rgba(10, 20, 14, 0.9)",
+        "--text": "#e4f7e6",
+        "--muted": "#7d9a84",
+        "--line": "rgba(57, 255, 20, 0.14)",
+        "--line-active": "rgba(57, 255, 20, 0.42)",
+        "--cyan": "#39ff14",
+        "--gold": "#c8ff7a",
+        "--rose": "#00f0ff",
+        "--green": "#39ff14",
+        "--blood": "#39ff14",
+        "--blood-soft": "rgba(57, 255, 20, 0.3)",
+        "--shadow": "0 10px 30px rgba(0, 0, 0, 0.75), 0 0 15px rgba(57, 255, 20, 0.1)",
+        "--shadow-neon": "0 0 15px rgba(57, 255, 20, 0.28)",
+        "--brand-glow": "rgba(57, 255, 20, 0.32)",
+        "--header-line": "rgba(57, 255, 20, 0.22)"
+      }
+    },
+    {
+      "id": "ash",
+      "label": "Ash",
+      "era": "Neutral",
+      "note": "No colour at all: bone on charcoal, silver accents. Reads like print rather than a screen.",
+      "vars": {
+        "--bg": "#0c0c0d",
+        "--bg-2": "#131314",
+        "--surface": "rgba(18, 18, 20, 0.78)",
+        "--surface-2": "rgba(24, 24, 26, 0.9)",
+        "--text": "#e6e4df",
+        "--muted": "#8a877f",
+        "--line": "rgba(230, 228, 223, 0.12)",
+        "--line-active": "rgba(230, 228, 223, 0.38)",
+        "--cyan": "#e6e4df",
+        "--gold": "#a8a49b",
+        "--rose": "#d8d4cc",
+        "--green": "#9a978f",
+        "--blood": "#d8d4cc",
+        "--blood-soft": "rgba(216, 212, 204, 0.28)",
+        "--shadow": "0 26px 60px rgba(0, 0, 0, 0.82)",
+        "--shadow-neon": "none",
+        "--brand-glow": "rgba(216, 212, 204, 0.22)",
+        "--header-line": "rgba(230, 228, 223, 0.16)"
+      }
+    }
+  ]
+}

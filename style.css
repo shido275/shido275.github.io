@@ -127,3 +127,18 @@
     letter-spacing: 0.16em;
     text-transform: uppercase;
 }
+
+/* ==========================================================================
+   THEME HOOKS — the two reds this layer used to hard-code now follow the
+   active palette, so an older theme is not left wearing gothic red.
+   themes.json supplies --brand-glow and --header-line; the fallbacks keep
+   the gothic values when no theme is loaded.
+   ========================================================================== */
+
+.brand {
+    text-shadow: 0 0 26px var(--brand-glow, rgba(212, 21, 21, 0.3));
+}
+
+.site-header {
+    border-bottom-color: var(--header-line, rgba(212, 21, 21, 0.22));
+}

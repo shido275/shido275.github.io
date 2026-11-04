@@ -1,0 +1,93 @@
+/* ==========================================================================
+   Theme tool - palette cards with a colour preview. Loaded after manage.css.
+   ========================================================================== */
+
+.theme-card {
+    display: grid;
+    grid-template-columns: 82px minmax(0, 1fr) auto;
+    gap: 14px 18px;
+    align-items: center;
+    margin-top: 12px;
+    padding: 14px 16px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--surface);
+}
+
+.theme-card.is-current {
+    border-color: var(--line-active);
+    box-shadow: inset 0 0 0 1px var(--line-active);
+}
+
+.theme-swatch {
+    display: flex;
+    gap: 4px;
+    align-items: flex-end;
+    width: 82px;
+    height: 56px;
+    padding: 9px;
+    border: 1px solid var(--line-active);
+    border-radius: 8px;
+    box-sizing: border-box;
+}
+
+.theme-swatch__dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
+
+.theme-card__body {
+    min-width: 0;
+}
+
+.theme-card__body strong {
+    display: block;
+    font-family: var(--heading);
+    font-size: 0.92rem;
+    letter-spacing: 0.04em;
+}
+
+.theme-card__body small {
+    display: block;
+    margin-top: 2px;
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+
+.theme-card__body p {
+    margin: 6px 0 0;
+    font-size: 0.86rem;
+    line-height: 1.45;
+    color: var(--muted);
+}
+
+.theme-card__actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-end;
+}
+
+.theme-card__actions .checkbox {
+    white-space: nowrap;
+}
+
+#themes-list .muted {
+    margin-top: 12px;
+}
+
+@media (max-width: 720px) {
+    .theme-card {
+        grid-template-columns: 1fr;
+    }
+
+    .theme-card__actions {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+    }
+}
