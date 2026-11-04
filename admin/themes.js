@@ -184,3 +184,28 @@
         init();
     }
 })();
+
+/* ==========================================================================
+   The newer sections load themselves from here, so this page needs one script
+   tag per tool rather than a shared bootstrap. Each file mounts its own nav
+   item and view, and initialises whether or not DOMContentLoaded has already
+   fired. async=false keeps them in order: the cores run before the tools that
+   use them, and live.js wraps Admin.publish before anyone clicks Publish.
+   ========================================================================== */
+(function () {
+    "use strict";
+    const here = document.currentScript;
+    const anchor = here && here.nextSibling;
+    const tools = ["live.js", "background-core.js", "backgrounds.js", "beat-core.js", "beats.js"];
+
+    tools.forEach(src => {
+        const script = document.createElement("script");
+        script.src = src;
+        script.async = false;
+        if (anchor && anchor.parentNode) {
+            anchor.parentNode.insertBefore(script, anchor);
+        } else {
+            document.body.appendChild(script);
+        }
+    });
+})();
