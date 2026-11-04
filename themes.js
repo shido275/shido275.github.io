@@ -6,6 +6,12 @@
    (--bg, --text, --blood, ...), so an old theme can be brought back without
    keeping old stylesheets around.
 
+   A theme may also name its own stylesheet ("css"). That is for a look that
+   changed the layout, the type and the background too, not just the colours:
+   the file is injected after the site's own stylesheets while that theme is
+   active, and taken out again when the theme changes, so nothing leaks into
+   the next look.
+
    Two modes, both decided in the dashboard:
      - fixed    one theme, chosen once
      - rotate   a different theme on every page load (never the same twice in a
@@ -18,9 +24,30 @@
 
     const THEMES_URL = "themes.json";
     const LAST_KEY = "xid.theme.last";
+    const LINK_ID = "xid-theme-css";
     const root = document.documentElement;
 
     const cssName = name => (String(name).startsWith("--") ? String(name) : `--${name}`);
+
+    /* One slot for a theme's own stylesheet: swapped in place, removed when a
+       theme without one takes over. Appended last so it wins over style.css. */
+    function stylesheet(href) {
+        const existing = document.getElementById(LINK_ID);
+        const url = href ? String(href) : "";
+        if (!url) {
+            if (existing) existing.remove();
+            return;
+        }
+        if (existing) {
+            if (existing.getAttribute("href") !== url) existing.setAttribute("href", url);
+            return;
+        }
+        const link = document.createElement("link");
+        link.id = LINK_ID;
+        link.rel = "stylesheet";
+        link.href = url;
+        document.head.appendChild(link);
+    }
 
     function apply(theme) {
         if (!theme || !theme.vars || typeof theme.vars !== "object") return false;
@@ -30,6 +57,7 @@
             root.style.setProperty(cssName(name), String(value));
         });
         root.setAttribute("data-theme", theme.id || "");
+        stylesheet(theme.css);
         return true;
     }
 

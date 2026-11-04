@@ -29,10 +29,11 @@
       }
     },
     {
-      "id": "neon",
-      "label": "Neon Cyberpunk",
-      "era": "Original theme",
-      "note": "The first look, recovered from the pre-gothic stylesheet: cyan and magenta on near-black navy, with a hard neon glow.",
+      "id": "auckland-2077",
+      "label": "Auckland 2077",
+      "era": "Original theme, restored",
+      "css": "theme-auckland-2077.css",
+      "note": "The original cyberpunk site: Orbitron and Share Tech Mono, slanted neon buttons, tech-plate sections and the animated Auckland backdrop. The layout, type and background all come back with it; the colours below are the palette it shipped with.",
       "vars": {
         "--bg": "#05050a",
         "--bg-2": "#0a0a12",
@@ -57,8 +58,8 @@
     {
       "id": "terminal",
       "label": "Neon Terminal",
-      "era": "Neon variant",
-      "note": "The same neon frame with the green token leading instead of cyan - the old palette's second colour, promoted.",
+      "era": "Auckland 2077 variant",
+      "note": "The Auckland 2077 palette with its green token leading instead of cyan. Colours only - no old layout.",
       "vars": {
         "--bg": "#04060a",
         "--bg-2": "#080c0a",
