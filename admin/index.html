@@ -12,6 +12,7 @@
     <link rel="stylesheet" href="admin.css">
     <link rel="stylesheet" href="manage.css">
     <link rel="stylesheet" href="lock.css">
+    <link rel="stylesheet" href="themes.css">
 </head>
 
 <body class="admin">
@@ -47,6 +48,9 @@
             </button>
             <button class="admin-nav__item" type="button" data-view="manage">
                 <span>Manage</span><small>Reorder and delete</small>
+            </button>
+            <button class="admin-nav__item" type="button" data-view="themes">
+                <span>Themes</span><small>Old looks</small>
             </button>
             <button class="admin-nav__item" type="button" data-view="settings">
                 <span>Connect</span><small>Token</small>
@@ -446,6 +450,47 @@
                 </div>
             </section>
 
+            <section class="admin-view" id="view-themes" aria-labelledby="themes-heading">
+                <div class="panel-head">
+                    <p class="eyebrow">Look</p>
+                    <h1 id="themes-heading">Themes</h1>
+                    <p class="hint">Every palette the site can wear, current one first. Each is just the set of colour
+                        tokens the stylesheets read, so bringing back an old look does not mean keeping old stylesheets
+                        around.</p>
+                </div>
+
+                <div class="panel">
+                    <div class="row">
+                        <button class="button" type="button" id="themes-load">Load themes</button>
+                        <span class="status" id="themes-count">Not loaded</span>
+                    </div>
+                    <label class="checkbox"><input type="checkbox" id="themes-rotate"> Change the theme on every
+                        reload</label>
+                    <p class="hint">Rotation deals a different palette on each page load and never repeats the one a
+                        visitor just saw. <strong>Preview</strong> opens the site with <code>?theme=</code> so a look
+                        can be checked before it is made the default.</p>
+                    <div id="themes-list"></div>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-head">
+                        <p class="eyebrow">Publish</p>
+                        <h2>Commit theme</h2>
+                    </div>
+                    <div class="publish-grid">
+                        <label>Commit message<input id="themes-message" autocomplete="off" value="Set the site theme"></label>
+                        <label>Branch<input id="themes-branch" autocomplete="off" spellcheck="false"
+                                placeholder="current branch"></label>
+                        <label class="checkbox"><input type="checkbox" id="themes-dryrun"> Dry run</label>
+                    </div>
+                    <div class="row">
+                        <button class="button" type="button" id="themes-plan">Preview plan</button>
+                        <button class="button primary" type="button" id="themes-publish">Publish theme</button>
+                    </div>
+                    <div id="themes-output" aria-live="polite"></div>
+                </div>
+            </section>
+
             <section class="admin-view" id="view-settings" aria-labelledby="connect-heading">
                 <div class="panel-head">
                     <p class="eyebrow">Setup</p>
@@ -495,6 +540,7 @@
     <script src="media.js"></script>
     <script src="links.js"></script>
     <script src="manage.js"></script>
+    <script src="themes.js"></script>
 </body>
 
 </html>
