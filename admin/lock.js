@@ -1,27 +1,27 @@
 /* ==========================================================================
-   Passcode gate for the Control Room.
+   Passcode gate for the Control Room - one fixed passcode.
 
    The dashboard talks to api.github.com with a personal token, so an
-   unprotected /admin/ is an open door. This gate does two things:
+   unprotected /admin/ is an open door. This gate puts a passcode in front of
+   the tools, the header and the log, and re-locks after a stretch of
+   inactivity or when Lock is pressed.
 
-   - It puts a passcode in front of the dashboard: the tools, the header and
-     the log stay hidden until the passcode is entered, and the tab re-locks
-     itself after a stretch of inactivity or when you press Lock.
-   - It keeps the token out of plain localStorage: the token is sealed with
-     AES-GCM under a PBKDF2 key derived from the passcode, so a backed-up
-     browser profile holds a cipher, not a credential.
+   The passcode is fixed here rather than chosen per browser. It is still the
+   key to the token: the token is sealed with AES-GCM under a PBKDF2 key
+   derived from it, so localStorage holds a cipher, not a credential, and a
+   copied browser profile cannot publish on its own.
 
-   This is a deterrent for a shared laptop, not a server-side secret. The page
-   is public, so what actually protects the repository is the token itself:
-   scope it to this repository with Contents: Read and write and nothing more.
+   Because the page is public, this is a lock on the browser rather than a
+   server secret - the token's own scope is still the real protection. Keep it
+   limited to this repository with Contents: Read and write.
    ========================================================================== */
 (function () {
     "use strict";
 
     const CONFIG_KEY = "xid.admin.config.v2";
     const VAULT_KEY = "xid.admin.vault.v1";
+    const FIXED_PASSCODE = "05042005";
     const LOCK_AFTER_MS = 20 * 60 * 1000;
-    const MIN_PASSCODE = 6;
     const ITERATIONS = 210000;
 
     const store = window.localStorage;
@@ -33,7 +33,6 @@
     let pendingToken = "";
     let idleTimer = null;
     let gate = null;
-    let setupMode = false;
 
     const $ = id => document.getElementById(id);
     const encode = value => new TextEncoder().encode(value);
@@ -42,7 +41,7 @@
     /* ------------------------------------------------------------- migration */
 
     /* A token saved by an older version of the dashboard sits in plain text.
-       Lift it out at load and keep it only until a passcode seals it. */
+       Lift it out at load and keep it only until the fixed passcode seals it. */
     function takePlainToken() {
         let config = {};
         try {
@@ -92,8 +91,8 @@
         return bytes;
     }
 
-    async function deriveKey(passcode, salt) {
-        const material = await crypto.subtle.importKey("raw", encode(passcode), "PBKDF2", false, ["deriveKey"]);
+    async function deriveKey(salt) {
+        const material = await crypto.subtle.importKey("raw", encode(FIXED_PASSCODE), "PBKDF2", false, ["deriveKey"]);
         return crypto.subtle.deriveKey(
             { name: "PBKDF2", salt, iterations: ITERATIONS, hash: "SHA-256" },
             material,
@@ -113,7 +112,7 @@
 
     async function sealVault(token) {
         const vault = readVault();
-        if (!vault) return false;
+        if (!vault || !cryptoKey) return false;
         const iv = crypto.getRandomValues(new Uint8Array(12));
         const data = await crypto.subtle.encrypt(
             { name: "AES-GCM", iv },
@@ -124,12 +123,16 @@
         return true;
     }
 
-    async function createVault(passcode) {
-        if (!window.crypto || !crypto.subtle) throw new Error("This browser cannot store a passcode over an insecure connection.");
+    async function createVault(token) {
+        if (!window.crypto || !crypto.subtle) throw new Error("This browser cannot seal the token over an insecure connection.");
         const salt = crypto.getRandomValues(new Uint8Array(16));
         const iv = crypto.getRandomValues(new Uint8Array(12));
-        const key = await deriveKey(passcode, salt);
-        const data = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, encode(JSON.stringify({ token: pendingToken })));
+        const key = await deriveKey(salt);
+        const data = await crypto.subtle.encrypt(
+            { name: "AES-GCM", iv },
+            key,
+            encode(JSON.stringify({ token: String(token || "") }))
+        );
         setItemRaw.call(store, VAULT_KEY, JSON.stringify({
             v: 1,
             salt: base64(salt),
@@ -138,14 +141,14 @@
             createdAt: new Date().toISOString()
         }));
         cryptoKey = key;
-        return pendingToken;
+        return String(token || "");
     }
 
-    async function openVault(passcode) {
+    async function openVault() {
         const vault = readVault();
         if (!vault) return null;
-        const key = await deriveKey(passcode, unbase64(vault.salt));
         try {
+            const key = await deriveKey(unbase64(vault.salt));
             const plain = await crypto.subtle.decrypt({ name: "AES-GCM", iv: unbase64(vault.iv) }, key, unbase64(vault.data));
             const payload = JSON.parse(decode(plain));
             cryptoKey = key;
@@ -168,17 +171,14 @@
             <form class="lock-card" id="lock-form" autocomplete="off">
                 <p class="eyebrow">Control Room</p>
                 <h1 id="lock-title">Passcode</h1>
-                <p class="lock-hint" id="lock-hint"></p>
+                <p class="lock-hint" id="lock-hint">Enter the passcode to open the Control Room. It stays locked after a stretch of inactivity, or when you press Lock.</p>
                 <label>Passcode
-                    <input id="lock-pass" type="password" inputmode="text" autocomplete="current-password"
+                    <input id="lock-pass" type="password" inputmode="numeric" autocomplete="current-password"
                         aria-describedby="lock-message">
-                </label>
-                <label id="lock-confirm-row" hidden>Confirm passcode
-                    <input id="lock-confirm" type="password" autocomplete="new-password">
                 </label>
                 <p class="lock-message" id="lock-message" role="alert"></p>
                 <button class="button primary" type="submit" id="lock-submit">Unlock</button>
-                <button class="button ghost" type="button" id="lock-forgot" hidden>Forgot it - reset the vault</button>
+                <button class="button ghost" type="button" id="lock-forgot" hidden>Reset the sealed token</button>
             </form>
         `;
         document.body.appendChild(node);
@@ -194,8 +194,6 @@
             input.value = "";
             input.focus();
         }
-        const confirm = $("lock-confirm");
-        if (confirm) confirm.value = "";
         message("");
     }
 
@@ -209,29 +207,6 @@
         if (!node) return;
         node.textContent = text || "";
         node.dataset.tone = tone || "";
-    }
-
-    function configureMode() {
-        setupMode = !readVault();
-        const title = $("lock-title");
-        const hint = $("lock-hint");
-        const confirm = $("lock-confirm-row");
-        const submit = $("lock-submit");
-        const forgot = $("lock-forgot");
-
-        if (setupMode) {
-            title.textContent = "Create a passcode";
-            hint.textContent = "Choose a passcode for this browser. It seals the GitHub token stored here, so nobody can publish through the dashboard without it. There is no recovery: losing it means pasting the token again.";
-            confirm.hidden = false;
-            submit.textContent = "Set passcode";
-            forgot.hidden = true;
-        } else {
-            title.textContent = "Locked";
-            hint.textContent = "Enter the passcode to open the Control Room. It stays locked after a stretch of inactivity, or when you press Lock.";
-            confirm.hidden = true;
-            submit.textContent = "Unlock";
-            forgot.hidden = false;
-        }
     }
 
     /* --------------------------------------------------------------- unlock */
@@ -270,7 +245,6 @@
         }
         const field = $("cfg-token");
         if (field) field.value = "";
-        configureMode();
         showGate();
     }
 
@@ -290,29 +264,7 @@
             message("Enter the passcode.");
             return;
         }
-
-        if (setupMode) {
-            const confirmValue = $("lock-confirm").value;
-            if (passcode.length < MIN_PASSCODE) {
-                message(`Use at least ${MIN_PASSCODE} characters.`);
-                return;
-            }
-            if (passcode !== confirmValue) {
-                message("The two passcodes do not match.");
-                return;
-            }
-            try {
-                const token = await createVault(passcode);
-                await applyUnlocked({ token });
-                message("");
-            } catch (error) {
-                message(error.message || "Could not create the vault.");
-            }
-            return;
-        }
-
-        const payload = await openVault(passcode);
-        if (!payload) {
+        if (passcode !== FIXED_PASSCODE) {
             message("Wrong passcode.", "error");
             if (passInput) {
                 passInput.value = "";
@@ -320,19 +272,38 @@
             }
             return;
         }
-        await applyUnlocked(payload);
+
+        try {
+            if (!readVault()) {
+                const token = await createVault(pendingToken);
+                await applyUnlocked({ token });
+                return;
+            }
+            const payload = await openVault();
+            if (payload) {
+                await applyUnlocked(payload);
+                return;
+            }
+            // Sealed by an older passcode: the cipher cannot be opened, so start
+            // a fresh vault and ask for the token once.
+            store.removeItem(VAULT_KEY);
+            const token = await createVault(pendingToken);
+            await applyUnlocked({ token });
+            message("Unlocked. The old sealed token could not be opened - paste it again in Connect.", "warn");
+        } catch (error) {
+            message(error.message || "Could not open the vault.", "error");
+        }
     }
 
     function resetVault() {
-        const sure = window.confirm("Reset the passcode? The sealed token is deleted and you will need to paste a new token in Connect.");
+        const sure = window.confirm("Clear the sealed token? You will need to paste it again in Connect.");
         if (!sure) return;
         store.removeItem(VAULT_KEY);
         setItemRaw.call(store, CONFIG_KEY, JSON.stringify({ owner: "shido275", repo: "shido275.github.io", branch: "main", token: "" }));
         pendingToken = "";
         cryptoKey = null;
-        configureMode();
         showGate();
-        message("Vault cleared. Choose a new passcode.");
+        message("Sealed token cleared. Unlock, then paste a new token in Connect.");
     }
 
     /* ------------------------------------------------------------- chrome */
@@ -359,76 +330,19 @@
         panel.innerHTML = `
             <div class="panel-head">
                 <p class="eyebrow">Passcode</p>
-                <h2>Change the passcode</h2>
+                <h2>Access</h2>
             </div>
-            <p class="hint">The passcode seals the GitHub token stored in this browser. Changing it re-seals the
-                token you are signed in with now, so you do not need the old one.</p>
-            <div class="field-grid">
-                <label>New passcode
-                    <input id="lock-new" type="password" autocomplete="new-password" minlength="${MIN_PASSCODE}">
-                </label>
-                <label>Confirm new passcode
-                    <input id="lock-new-confirm" type="password" autocomplete="new-password" minlength="${MIN_PASSCODE}">
-                </label>
-            </div>
-            <div class="row">
-                <button class="button primary" type="button" id="lock-save">Save passcode</button>
-                <span class="status" id="lock-status"></span>
-            </div>
+            <p class="hint">The passcode for this dashboard is fixed. It seals the GitHub token in this browser, so
+                the dashboard cannot publish until it is entered. <strong>Reset the sealed token</strong> on the lock
+                screen clears the token without changing the passcode.</p>
         `;
         view.appendChild(panel);
-
-        $("lock-save").addEventListener("click", async () => {
-            const next = $("lock-new").value;
-            const confirmValue = $("lock-new-confirm").value;
-            const status = $("lock-status");
-            const say = (text, tone) => {
-                status.textContent = text;
-                status.dataset.tone = tone || "";
-            };
-
-            if (!unlocked) {
-                say("Unlock first.", "warn");
-                return;
-            }
-            if (next.length < MIN_PASSCODE) {
-                say(`Use at least ${MIN_PASSCODE} characters.`, "warn");
-                return;
-            }
-            if (next !== confirmValue) {
-                say("The two passcodes do not match.", "warn");
-                return;
-            }
-
-            try {
-                const token = (window.Admin && window.Admin.state.config.token) || pendingToken || "";
-                const salt = crypto.getRandomValues(new Uint8Array(16));
-                const iv = crypto.getRandomValues(new Uint8Array(12));
-                const key = await deriveKey(next, salt);
-                const data = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, encode(JSON.stringify({ token })));
-                setItemRaw.call(store, VAULT_KEY, JSON.stringify({
-                    v: 1,
-                    salt: base64(salt),
-                    iv: base64(iv),
-                    data: base64(data),
-                    createdAt: new Date().toISOString()
-                }));
-                cryptoKey = key;
-                $("lock-new").value = "";
-                $("lock-new-confirm").value = "";
-                say("Passcode saved.", "ok");
-            } catch (error) {
-                say(error.message || "Could not save the passcode.", "error");
-            }
-        });
     }
 
     /* ------------------------------------------------------------------- boot */
 
     function wireGate() {
         gate = buildGate();
-        configureMode();
-
         $("lock-form").addEventListener("submit", submitGate);
         $("lock-forgot").addEventListener("click", resetVault);
 
@@ -454,7 +368,9 @@
     document.addEventListener("DOMContentLoaded", () => {
         injectLockButton();
         injectPasscodePanel();
-        configureMode();
+        // The reset button is only useful once something is sealed.
+        const forgot = $("lock-forgot");
+        if (forgot) forgot.hidden = !readVault();
     });
 
     window.AdminLock = { lock, unlock: () => showGate(), isUnlocked: () => unlocked };
