@@ -1,0 +1,179 @@
+/* ==========================================================================
+   Polish layer - loaded last, after style-mobile.css.
+
+   Two jobs. First, keep the expensive decorative effects off the devices that
+   cannot afford them: the grain and scan layers animate full-screen paint on
+   every frame, and the sticky header and player bar repaint a blurred copy of
+   whatever is behind them on every scroll. Phones get the same look with the
+   animation stopped and a cheaper blur.
+
+   Second, the player bar on a phone. It was stacked into three centred rows,
+   which reads like a desktop layout squeezed into a narrow screen. Below 600px
+   it becomes two rows: artwork and title beside the transport buttons, with
+   the timeline underneath, and no volume slider (the mute button stays).
+   ========================================================================== */
+
+/* The visualizer paints into its own canvas now; the original stays in the DOM
+   so nothing that looks for it breaks, but it must not take up space. */
+.xid-vis-canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.visualizer-wrapper canvas[hidden] {
+    display: none !important;
+}
+
+/* ------------------------------------------------------------- card painting */
+
+/* Off-screen cards are not laid out or painted until they scroll near the
+   viewport. Applies to the long grids only, where it actually saves work. */
+.release-card,
+.beat-card {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 280px;
+}
+
+/* ---------------------------------------------------------------- light mode */
+
+@media (max-width: 820px) {
+    /* A static grain and scan still read as film texture without animating a
+       fixed, screen-sized layer sixty times a second. */
+    .noise-layer {
+        animation: none;
+        opacity: 0.04;
+    }
+
+    .scan-layer {
+        animation: none;
+        opacity: 0.035;
+    }
+
+    .site-header {
+        backdrop-filter: blur(10px);
+    }
+
+    .player-bar {
+        backdrop-filter: blur(12px);
+    }
+
+    .info-modal-overlay {
+        backdrop-filter: blur(8px);
+    }
+}
+
+/* ------------------------------------------------------------------- phones */
+
+@media (max-width: 600px) {
+    .player-bar {
+        padding: 0.5rem 0.7rem calc(0.5rem + env(safe-area-inset-bottom));
+    }
+
+    .player-bar-container {
+        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-areas:
+            "info extra"
+            "controls controls";
+        gap: 0.35rem 0.5rem;
+        text-align: left;
+    }
+
+    .player-track-info {
+        grid-area: info;
+        justify-content: flex-start;
+        gap: 0.55rem;
+    }
+
+    #global-player-art {
+        width: 2.3rem;
+        height: 2.3rem;
+        flex: none;
+    }
+
+    #global-player-title {
+        font-size: 0.76rem;
+        letter-spacing: 0.02em;
+    }
+
+    #global-player-artist {
+        font-size: 0.5rem;
+        letter-spacing: 0.12em;
+        margin-top: 0.1rem;
+    }
+
+    .player-bar-extra {
+        grid-area: extra;
+        justify-content: flex-end;
+        gap: 0.2rem;
+    }
+
+    .player-bar-controls {
+        grid-area: controls;
+        gap: 0.25rem;
+    }
+
+    .player-buttons {
+        gap: 0.25rem;
+    }
+
+    .bar-btn {
+        min-height: 1.85rem;
+        padding: 0.15rem 0.4rem;
+        font-size: 0.54rem;
+        letter-spacing: 0.1em;
+    }
+
+    .primary-play {
+        padding: 0.15rem 0.75rem;
+    }
+
+    /* The slider is impossible to hit at this width; mute is not. */
+    .volume-container .volume-slider-wrapper {
+        display: none;
+    }
+
+    .time-label {
+        font-size: 0.5rem;
+        min-width: 26px;
+    }
+
+    .player-timeline-container {
+        gap: 0.4rem;
+    }
+
+    .visualizer-wrapper {
+        height: 62px;
+    }
+
+    /* Two rows instead of three, so the bar covers less of the page. */
+    body {
+        padding-bottom: 124px;
+    }
+
+    .queue-drawer {
+        right: 0;
+        left: 0;
+        width: auto;
+        max-height: 60vh;
+    }
+}
+
+@media (max-width: 380px) {
+    .player-bar-extra .bar-btn {
+        padding: 0.15rem 0.3rem;
+        letter-spacing: 0.04em;
+    }
+
+    #global-player-title {
+        font-size: 0.7rem;
+    }
+}
+
+/* Motion-sensitive visitors never get the moving grain. */
+@media (prefers-reduced-motion: reduce) {
+    .noise-layer,
+    .scan-layer {
+        animation: none;
+    }
+}
