@@ -142,3 +142,75 @@
 .site-header {
     border-bottom-color: var(--header-line, rgba(212, 21, 21, 0.22));
 }
+
+/* ==========================================================================
+   SITE BACKGROUND — images, GIFs and video clips cycled by background.js from
+   backgrounds.json. Two fixed layers crossfade; all page content paints above
+   them. With no items the layer stands down and the stylesheet's own backdrop
+   is exactly as it was.
+   ========================================================================== */
+
+html[data-background="on"] {
+    background-color: var(--bg);
+}
+
+/* The body stops painting a backdrop of its own so the images show through. */
+html[data-background="on"] body {
+    background-color: transparent;
+    background-image: none;
+}
+
+/* A theme (Auckland 2077) paints its era artwork here; a chosen background
+   replaces it and carries its own vignette below. */
+html[data-background="on"] body::before {
+    opacity: 0;
+}
+
+.xid-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    overflow: hidden;
+    pointer-events: none;
+    background: var(--bg);
+}
+
+.xid-backdrop__layer {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity var(--xid-bg-fade, 1.2s) ease;
+    will-change: opacity;
+}
+
+.xid-backdrop__layer.is-on {
+    opacity: 1;
+}
+
+.xid-backdrop__layer img,
+.xid-backdrop__layer video {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: blur(var(--xid-bg-blur, 0px));
+    transform: scale(1.02);
+}
+
+/* Vignette + the dim slider, so text stays readable over any image. */
+.xid-backdrop__scrim {
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(ellipse 72% 58% at 50% 45%, transparent 22%, rgba(0, 0, 0, calc(var(--xid-bg-dim, 0.55) * 1.15)) 100%),
+        linear-gradient(to bottom,
+            rgba(0, 0, 0, calc(var(--xid-bg-dim, 0.55) * 1.05)),
+            rgba(0, 0, 0, calc(var(--xid-bg-dim, 0.55) * 0.55)) 40%,
+            rgba(0, 0, 0, calc(var(--xid-bg-dim, 0.55) * 1.2)));
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .xid-backdrop__layer {
+        transition: none;
+    }
+}
