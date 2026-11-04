@@ -14,11 +14,25 @@ Live at **https://shido275.github.io/admin/**
 | **Photos** | `assets/photos/*`, `epk-media.json` | EPK → Photos slideshow |
 | **Videos** | `assets/videos/*`, `epk-media.json` | EPK → Music Videos and Performances |
 | **All Links** | `links.json` | `#/links` directory |
+| **Beat Store** | `Beats/<folder>/…`, `beats-manifest.json` | `#/beats` store |
+| **Background** | `assets/backgrounds/*`, `backgrounds.json` | the cycled backdrop on every page |
 | **Manage** | reorders and deletes releases, tracks, EPK media, links | everything above |
 
 Every tool previews its plan first (files, sizes, warnings) and then commits
 blobs → tree → commit → ref in one atomic commit. A failure leaves the branch
 untouched.
+
+**A publish is live in seconds, not minutes.** The site reads its data files and
+media straight from the commit (`feed.js` → `raw.githubusercontent.com`, cache
+busted), so it does not wait for a GitHub Pages build and does not sit behind
+the ten-minute cache Pages sets on its own JSON. After every publish the
+dashboard waits for the exact bytes it just wrote to answer on the branch and
+reports *Live on the site after Ns*. If a tool ever commits to a branch other
+than the base branch, the dashboard says plainly that the site will not show it
+until it is merged.
+
+Only markup, stylesheet and script changes need a Pages build; content, audio,
+images and the background do not.
 
 ## Setup
 
@@ -90,6 +104,38 @@ Five groups — Featured, Platforms, Socials, Business and Hero socials — rend
 into `#/links`. Empty groups keep the built-in markup for that section. Only
 `https://`, `mailto:`, `tel:`, `#` routes and relative paths are accepted;
 `javascript:` links are dropped with a warning.
+
+## Beat Store
+
+The **Beat Store** tool manages the beats under `#/beats` the same way Releases
+manages music. Add a beat with its audio, cover art, title, folder, BPM, key,
+price, licence and payment link, or load the published store and edit those
+fields inline. The arrows reorder the store; **Remove** drops the beat, its
+audio, its metadata JSON and its cover from the repository in the same commit.
+
+Uploads go to `Beats/<folder>/` (the folder defaults to the title). Every beat
+is mirrored into `beats-manifest.json`, which is what the site reads; the
+per-beat JSON beside the audio is kept for anything that scans the folders.
+
+## Background
+
+The **Background** tool feeds `backgrounds.json`, and the site's `background.js`
+cycles whatever it lists behind every page: images, GIFs and short video clips,
+crossfading in the order shown. Uploads go to `assets/backgrounds/`; a link can
+be pasted instead.
+
+- **Seconds per item** — how long each one holds before the next fades in.
+- **Transition** — crossfade or hard cut.
+- **Dim** — strength of the vignette that keeps text readable over the image.
+- **Blur** — softens the image so it sits behind the content.
+
+With the list empty, or the *Show the background on the site* box cleared, the
+layer stands down and the stylesheet's own backdrop returns untouched. Visitors
+who ask for reduced motion see the first item only, and the cycle pauses while
+the tab is hidden.
+
+A theme with its own artwork (Auckland 2077) paints in `body::before`; a chosen
+background replaces that artwork rather than fighting it.
 
 ## Manage: reorder and delete
 
