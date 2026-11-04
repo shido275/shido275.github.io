@@ -133,17 +133,24 @@
 })();
 
 /* ==========================================================================
-   The data layer and the cycled background are pulled in from here so the page
-   keeps the script tags it already had. async=false keeps them in order and
-   delays DOMContentLoaded, so feed.js has wrapped fetch before site.js asks it
-   for anything and background.js has a body to paint behind.
+   The data layer, the cycled background and the visualizer are pulled in from
+   here so the page keeps the script tags it already had. async=false keeps them
+   in order and delays DOMContentLoaded, so feed.js has wrapped fetch before
+   site.js asks it for anything, background.js has a body to paint behind, and
+   visualizer.js has replaced the old paint loop before the audio starts.
    ========================================================================== */
 (function () {
     "use strict";
     const here = document.currentScript;
     const anchor = here && here.nextSibling;
 
-    ["feed.js", "background.js"].forEach(src => {
+    // Loaded last so it wins over style.css and the theme's own stylesheet.
+    const polish = document.createElement("link");
+    polish.rel = "stylesheet";
+    polish.href = "style-perf.css";
+    document.head.appendChild(polish);
+
+    ["feed.js", "background.js", "visualizer.js"].forEach(src => {
         const script = document.createElement("script");
         script.src = src;
         script.async = false;
