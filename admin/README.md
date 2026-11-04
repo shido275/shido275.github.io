@@ -16,6 +16,7 @@ Live at **https://shido275.github.io/admin/**
 | **All Links** | `links.json` | `#/links` directory |
 | **Beat Store** | `Beats/<folder>/…`, `beats-manifest.json` | `#/beats` store |
 | **Background** | `assets/backgrounds/*`, `backgrounds.json` | the cycled backdrop on every page |
+| **Visualizer** | `visualizer.json` | the player's frequency display |
 | **Manage** | reorders and deletes releases, tracks, EPK media, links | everything above |
 
 Every tool previews its plan first (files, sizes, warnings) and then commits
@@ -32,7 +33,7 @@ than the base branch, the dashboard says plainly that the site will not show it
 until it is merged.
 
 Only markup, stylesheet and script changes need a Pages build; content, audio,
-images and the background do not.
+images, backgrounds and the visualizer do not.
 
 ## Setup
 
@@ -40,8 +41,8 @@ images and the background do not.
    **Settings → Developer settings → Fine-grained tokens → Generate new token**.
 2. Scope it to `shido275/shido275.github.io` only, with
    **Repository permissions → Contents: Read and write**.
-3. Open `/admin/`, choose a passcode, then go to **Connect**, paste the token and
-   press **Save & verify**.
+3. Open `/admin/`, enter the passcode, then go to **Connect**, paste the token
+   and press **Save & verify**.
 
 The token is stored in this browser's `localStorage` and sent only to
 `api.github.com`. **Forget token** wipes it. `/admin/` is public but does
@@ -49,23 +50,22 @@ nothing without a token — never commit one to the repo.
 
 ## Passcode
 
-The dashboard opens behind a passcode. On the first visit you choose one (at
-least six characters) and are let in; after that the page starts locked, and
-**Lock** in the header closes it again — as does twenty minutes of inactivity.
+The dashboard opens behind a fixed passcode, set in `admin/lock.js`. There is no
+setup step and nothing to remember per browser: the same passcode opens it
+everywhere, and **Lock** in the header closes it again — as does twenty minutes
+of inactivity.
 
 The passcode is not just a curtain: it is the key to the token. The token is
-encrypted with AES-GCM under a PBKDF2 key derived from the passcode, so
-`localStorage` holds a cipher rather than a credential, and the dashboard cannot
-read the token until the passcode is entered. A token saved later through
-**Connect** is intercepted and sealed the same way.
+sealed with AES-GCM under a PBKDF2 key derived from it, so `localStorage` holds
+a cipher rather than a credential, and the dashboard cannot read the token until
+the passcode is entered. A token saved later through **Connect** is intercepted
+and sealed the same way.
 
-Change the passcode in **Connect → Change the passcode**. Changing it re-seals
-the token you are signed in with, so the old one is not needed.
-
-There is no recovery: losing the passcode means **Forgot it - reset the vault**,
-which deletes the sealed token, then pasting a new token in Connect. Because
-`/admin/` is a public page, treat the passcode as a lock on this browser rather
-than a server secret — the token's own scope is still the real protection.
+Because `/admin/` is a public page and the passcode ships in its source, treat
+it as a lock on this browser rather than a server secret — the token's own scope
+is still the real protection. **Reset the sealed token** on the lock screen
+clears the stored token without changing the passcode, and you paste it again in
+Connect.
 
 ## Releases
 
@@ -113,6 +113,12 @@ price, licence and payment link, or load the published store and edit those
 fields inline. The arrows reorder the store; **Remove** drops the beat, its
 audio, its metadata JSON and its cover from the repository in the same commit.
 
+Each beat can carry two versions. A **tagged** audio file always plays on the
+site. An **untagged** (clean) cut is kept beside it in `Beats-clean/` and is not
+listed as a second beat; it only plays when that beat has no tagged file at all,
+so a beat that only ever had a clean cut still works. The row shows which
+versions it is carrying.
+
 Uploads go to `Beats/<folder>/` (the folder defaults to the title). Every beat
 is mirrored into `beats-manifest.json`, which is what the site reads; the
 per-beat JSON beside the audio is kept for anything that scans the folders.
@@ -136,6 +142,22 @@ the tab is hidden.
 
 A theme with its own artwork (Auckland 2077) paints in `body::before`; a chosen
 background replaces that artwork rather than fighting it.
+
+## Visualizer
+
+The **Visualizer** tool chooses what the player bar draws while a track plays:
+Bars, Mirror, Waveform, Radial, Dotmatrix, Pulse, or Off. It writes
+`visualizer.json`, which the site's `visualizer.js` reads on load.
+
+With **Cycle the style on every page load** ticked, each reload picks a different
+style and never repeats the one before it, exactly like theme rotation. Without
+it, every visitor gets the chosen style.
+
+The display only paints while a track is playing, the panel is open and the tab
+is visible, at a capped frame rate, with one gradient per size instead of one
+per bar per frame — so a paused or hidden display costs nothing. Visitors who
+ask for reduced motion still get the display, but it is the only animation left
+running.
 
 ## Manage: reorder and delete
 
@@ -181,7 +203,10 @@ rows *kept*.
 
 ```bash
 node admin/import-core.test.js
+node admin/background-beat.test.js
+node admin/feed.test.js
 ```
 
 Covers catalogue entries and order, `info.json` credits, path safety, media
-planning (including YouTube/Vimeo parsing) and link validation.
+planning (including YouTube/Vimeo parsing), link validation, background and beat
+planning, and the site's data layer.
