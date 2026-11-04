@@ -1,16 +1,33 @@
 /* ==========================================================================
-   Polish layer - loaded last, after style-mobile.css.
+   Polish layer - the last stylesheet, and the one that must win.
 
-   Two jobs. First, keep the expensive decorative effects off the devices that
-   cannot afford them: the grain and scan layers animate full-screen paint on
-   every frame, and the sticky header and player bar repaint a blurred copy of
-   whatever is behind them on every scroll. Phones get the same look with the
-   animation stopped and a cheaper blur.
+   Why this file uses heavy selectors: themes.js appends this sheet, then the
+   theme loader appends the theme's own stylesheet (theme-auckland-2077.css and
+   friends). The theme styles the header, player bar and every section band, so
+   a plain ".site-header" rule here loses to it no matter when this file loads.
+   Every override below is therefore scoped as "html body .thing" (higher
+   specificity than the theme's ".thing") and the properties that must not be
+   argued with - animation, backdrop-filter, fixed backgrounds - carry
+   !important. mobile.js also re-appends this sheet after the theme applies, so
+   order is right as well as specificity.
 
-   Second, the player bar on a phone. It was stacked into three centred rows,
-   which reads like a desktop layout squeezed into a narrow screen. Below 600px
-   it becomes two rows: artwork and title beside the transport buttons, with
-   the timeline underneath, and no volume slider (the mute button stays).
+   What it does on a phone or tablet:
+
+     - Stops the theme's decorative animation. Auckland 2077 animates a
+       full-screen fixed backdrop for 45s, the sticky header, the brand glow,
+       every section band, links and cards on 15s loops. That is a constant
+       repaint of most of the page, which is exactly the choppiness on mobile.
+       Colour changes stay; the movement does not. Transitions are untouched,
+       so menus and buttons still feel alive.
+     - Removes backdrop-filter. Five blurred layers (header, player bar, both
+       overlays, hero panel) each force the compositor to re-blur the page
+       behind them while scrolling.
+     - Removes background-attachment: fixed. iOS and Android repaint the whole
+       viewport for a fixed background on every scroll frame.
+     - Turns the player bar into two rows and sizes the page spacer from the
+       bar's real height instead of a guess.
+     - Gives the mobile nav a scrim, a scroll lock and dvh heights, so it no
+       longer runs under the browser chrome or scrolls the page behind it.
    ========================================================================== */
 
 /* The visualizer paints into its own canvas now; the original stays in the DOM
@@ -35,142 +52,236 @@
     contain-intrinsic-size: auto 280px;
 }
 
-/* ---------------------------------------------------------------- light mode */
+/* ------------------------------------------------------------- nav scrim */
 
-@media (max-width: 820px) {
-    /* A static grain and scan still read as film texture without animating a
-       fixed, screen-sized layer sixty times a second. */
-    .noise-layer {
-        animation: none;
-        opacity: 0.04;
+/* Created by mobile.js; invisible and inert until the drawer opens. */
+.xid-nav-scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    background: rgba(0, 0, 0, 0.6);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+}
+
+body.nav-open .xid-nav-scrim {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* -------------------------------------------- phones and touch-only screens */
+
+@media (max-width: 820px), (hover: none) and (pointer: coarse) {
+    /* 1. No decorative animation on touch devices. Colour still shifts with
+       the theme; nothing moves on its own. */
+    html body *,
+    html body *::before,
+    html body *::after {
+        animation: none !important;
     }
 
-    .scan-layer {
-        animation: none;
-        opacity: 0.035;
+    /* 2. No fixed-attachment backgrounds: they repaint the viewport on scroll. */
+    html body {
+        background-attachment: scroll !important;
     }
 
-    .site-header {
-        backdrop-filter: blur(10px);
+    html body::before {
+        transform: none !important;
+        background-attachment: scroll !important;
+        animation: none !important;
     }
 
-    .player-bar {
-        backdrop-filter: blur(12px);
+    /* 3. No blurred layers, with opaque replacements so text stays readable. */
+    html body .site-header,
+    html body .player-bar,
+    html body .info-modal-overlay,
+    html body .audio-init-overlay,
+    html body .hero-panel,
+    html body .section-band,
+    html body .queue-drawer,
+    html body .info-modal {
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
     }
 
-    .info-modal-overlay {
-        backdrop-filter: blur(8px);
+    html body .site-header {
+        background: rgba(5, 5, 10, 0.96) !important;
+        box-shadow: none !important;
+    }
+
+    html body .player-bar {
+        background: rgba(5, 5, 12, 0.98) !important;
+        box-shadow: none !important;
+    }
+
+    html body .info-modal-overlay,
+    html body .audio-init-overlay {
+        background: rgba(3, 3, 8, 0.96) !important;
+        height: 100dvh !important;
+        width: 100% !important;
+    }
+
+    /* 4. Thinner shadows: the neon glows are the other big paint cost. */
+    html body .section-band,
+    html body .hero {
+        box-shadow: none !important;
+    }
+
+    /* 5. A hero that fills 70vh on a phone is mostly empty image. */
+    html body .hero {
+        min-height: 0;
+    }
+
+    /* 6. Taps respond immediately instead of waiting for a double-tap. */
+    html body a,
+    html body button,
+    html body .button,
+    html body .bar-btn,
+    html body input,
+    html body select {
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
     }
 }
 
-/* ------------------------------------------------------------------- phones */
+/* ---------------------------------------------------------------- phones */
 
-@media (max-width: 600px) {
-    .player-bar {
-        padding: 0.5rem 0.7rem calc(0.5rem + env(safe-area-inset-bottom));
+@media (max-width: 820px) {
+    html body {
+        /* mobile.js writes the bar's measured height here. */
+        padding-bottom: calc(var(--xid-player-h, 138px) + 14px) !important;
     }
 
-    .player-bar-container {
-        grid-template-columns: minmax(0, 1fr) auto;
+    /* --- the drawer: full height, scrollable, above a scrim --- */
+    html body.nav-open {
+        overflow: hidden !important;
+        overscroll-behavior: contain;
+    }
+
+    html body .site-nav {
+        height: 100dvh;
+        max-height: 100dvh;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: calc(1.5rem + env(safe-area-inset-bottom));
+        visibility: hidden;
+        transition: right 0.28s ease, visibility 0.28s ease;
+    }
+
+    html body .site-nav.open {
+        visibility: visible;
+        right: 0;
+    }
+
+    /* --- the player: two rows, no stacked desktop layout --- */
+    html body .player-bar {
+        padding: 0.5rem 0.75rem calc(0.45rem + env(safe-area-inset-bottom));
+    }
+
+    html body .player-bar-container {
+        grid-template-columns: minmax(0, 1fr) auto !important;
         grid-template-areas:
             "info extra"
-            "controls controls";
-        gap: 0.35rem 0.5rem;
-        text-align: left;
+            "controls controls" !important;
+        gap: 0.35rem 0.5rem !important;
+        text-align: left !important;
     }
 
-    .player-track-info {
+    html body .player-track-info {
         grid-area: info;
-        justify-content: flex-start;
+        justify-content: flex-start !important;
         gap: 0.55rem;
     }
 
-    #global-player-art {
-        width: 2.3rem;
-        height: 2.3rem;
+    html body #global-player-art {
+        width: 2.4rem;
+        height: 2.4rem;
         flex: none;
     }
 
-    #global-player-title {
-        font-size: 0.76rem;
+    html body #global-player-title {
+        font-size: 0.8rem;
         letter-spacing: 0.02em;
     }
 
-    #global-player-artist {
-        font-size: 0.5rem;
+    html body #global-player-artist {
+        font-size: 0.52rem;
         letter-spacing: 0.12em;
         margin-top: 0.1rem;
     }
 
-    .player-bar-extra {
+    html body .player-bar-extra {
         grid-area: extra;
-        justify-content: flex-end;
+        justify-content: flex-end !important;
         gap: 0.2rem;
     }
 
-    .player-bar-controls {
+    html body .player-bar-controls {
         grid-area: controls;
         gap: 0.25rem;
     }
 
-    .player-buttons {
+    html body .player-buttons {
         gap: 0.25rem;
     }
 
-    .bar-btn {
-        min-height: 1.85rem;
-        padding: 0.15rem 0.4rem;
-        font-size: 0.54rem;
+    html body .bar-btn {
+        min-height: 1.9rem;
+        padding: 0.15rem 0.45rem;
+        font-size: 0.56rem;
         letter-spacing: 0.1em;
     }
 
-    .primary-play {
-        padding: 0.15rem 0.75rem;
+    html body .primary-play {
+        padding: 0.15rem 0.8rem;
     }
 
     /* The slider is impossible to hit at this width; mute is not. */
-    .volume-container .volume-slider-wrapper {
+    html body .volume-container .volume-slider-wrapper {
         display: none;
     }
 
-    .time-label {
-        font-size: 0.5rem;
-        min-width: 26px;
+    html body .time-label {
+        font-size: 0.52rem;
+        min-width: 28px;
     }
 
-    .player-timeline-container {
+    html body .player-timeline-container {
         gap: 0.4rem;
     }
 
-    .visualizer-wrapper {
-        height: 62px;
+    html body .visualizer-wrapper {
+        height: 66px;
     }
 
-    /* Two rows instead of three, so the bar covers less of the page. */
-    body {
-        padding-bottom: 124px;
-    }
-
-    .queue-drawer {
-        right: 0;
+    html body .queue-drawer {
+        right: 0 !important;
         left: 0;
-        width: auto;
-        max-height: 60vh;
+        width: auto !important;
+        max-height: 55dvh;
     }
 }
 
-@media (max-width: 380px) {
-    .player-bar-extra .bar-btn {
+/* ------------------------------------------------------------- small phones */
+
+@media (max-width: 400px) {
+    html body .player-bar-extra .bar-btn {
         padding: 0.15rem 0.3rem;
         letter-spacing: 0.04em;
     }
 
-    #global-player-title {
-        font-size: 0.7rem;
+    html body #global-player-title {
+        font-size: 0.72rem;
+    }
+
+    html body .bar-btn {
+        font-size: 0.52rem;
     }
 }
 
-/* Motion-sensitive visitors never get the moving grain. */
+/* Motion-sensitive visitors get no moving decoration anywhere. */
 @media (prefers-reduced-motion: reduce) {
     .noise-layer,
     .scan-layer {
