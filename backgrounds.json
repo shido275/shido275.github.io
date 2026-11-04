@@ -1,0 +1,8 @@
+{
+  "enabled": true,
+  "interval": 9,
+  "transition": "fade",
+  "dim": 0.55,
+  "blur": 0,
+  "items": []
+}
