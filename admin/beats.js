@@ -23,7 +23,9 @@
             <p class="eyebrow">Beat Store</p>
             <h1 id="beats-heading">Beat Store</h1>
             <p class="hint">The catalogue behind <code>#/beats</code>, managed next to the releases. Audio and cover
-                art upload to <code>Beats/&lt;folder&gt;/</code>; the order below is the order the store lists them.</p>
+                art upload to <code>Beats/&lt;folder&gt;/</code>; the order below is the order the store lists them.
+                A <strong>tagged</strong> beat always plays on the site; the <strong>untagged</strong> cut is kept
+                beside it and only plays when that beat has no tagged version.</p>
         </div>
 
         <div class="panel">
@@ -41,7 +43,8 @@
                 <label>Price<input id="beat-price" autocomplete="off" placeholder="$30"></label>
                 <label>License<input id="beat-license" autocomplete="off" placeholder="Non-exclusive MP3/WAV"></label>
                 <label>Payment link<input id="beat-payment" autocomplete="off" placeholder="https://paypal.me/..."></label>
-                <label>Audio<input id="beat-audio" type="file" accept=".mp3,.wav,.m4a,.flac,audio/*"></label>
+                <label>Tagged audio<input id="beat-audio" type="file" accept=".mp3,.wav,.m4a,.flac,audio/*"></label>
+                <label>Untagged audio (clean)<input id="beat-untagged" type="file" accept=".mp3,.wav,.m4a,.flac,audio/*"></label>
                 <label>Cover art<input id="beat-cover" type="file" accept=".jpg,.jpeg,.png,.webp,image/*"></label>
             </div>
             <div class="row">
@@ -114,6 +117,16 @@
         return `<span class="media-row__thumb">audio</span>`;
     }
 
+    /* What the row is actually carrying: both cuts, one of them, or neither. */
+    function versionLabel(beat) {
+        const tagged = Boolean(beat.file || beat.taggedUrl || (beat.tagged && beat.audioUrl));
+        const clean = Boolean(beat.untaggedFile || beat.cleanUrl);
+        if (tagged && clean) return "tagged + untagged";
+        if (tagged) return "tagged";
+        if (clean) return "untagged only";
+        return "no audio yet";
+    }
+
     function render() {
         const list = $("beats-list");
         list.innerHTML = model.items.map((beat, index) => `
@@ -132,7 +145,7 @@
                         placeholder="License" aria-label="License">
                     <input data-beat-field="paymentUrl" data-index="${index}" value="${esc(beat.paymentUrl || "")}"
                         placeholder="Payment link (PayPal, Stripe)" aria-label="Payment link">
-                    <small class="manage-path">${esc(beat.path || beat.audioUrl || "not uploaded yet")}</small>
+                    <small class="manage-path">${esc(versionLabel(beat))} - ${esc(beat.path || beat.audioUrl || "not uploaded yet")}</small>
                 </div>
                 <div class="media-row__actions">
                     <button class="button ghost" type="button" data-beat-move="-1" data-index="${index}"
@@ -154,23 +167,26 @@
         $("beat-artist").value = Core.DEFAULT_ARTIST;
         $("beat-license").value = Core.DEFAULT_LICENSE;
         $("beat-audio").value = "";
+        $("beat-untagged").value = "";
         $("beat-cover").value = "";
     }
 
     function addBeat() {
         const file = ($("beat-audio").files || [])[0] || null;
+        const untaggedFile = ($("beat-untagged").files || [])[0] || null;
         const coverFile = ($("beat-cover").files || [])[0] || null;
         const title = $("beat-title").value.trim();
         if (!title) {
             Admin.log("Give the beat a title first.");
             return;
         }
-        if (!file) {
-            Admin.log("Choose the beat's audio file - the store needs something to play.");
+        if (!file && !untaggedFile) {
+            Admin.log("Add the tagged beat, the untagged one, or both - the store needs something to play.");
             return;
         }
         model.items.push({
             file,
+            untaggedFile,
             coverFile,
             title,
             folder: $("beat-folder").value.trim(),
@@ -261,7 +277,7 @@
             });
             if (sha) {
                 model.existing = plan().entries;
-                model.items = model.items.map(beat => ({ ...beat, file: null, coverFile: null }));
+                model.items = model.items.map(beat => ({ ...beat, file: null, untaggedFile: null, coverFile: null }));
                 model.loaded = true;
                 render();
             }
