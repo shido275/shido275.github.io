@@ -7,6 +7,38 @@
     width: min(760px, calc(100% - 2rem));
 }
 
+/* ---------------------------------------------------------------------------
+   Profile photo
+
+   profile.json drives the avatar above. The same photo, dimmed and graded, sits
+   behind the first EPK section so the press kit opens on the artist rather than
+   on a flat panel. Without a photo the class is never added and the hero keeps
+   the look it had. The pseudo-element paints under the hero's own content, and
+   the fade at the bottom keeps the next section's edge clean.
+   --------------------------------------------------------------------------- */
+
+#view-epk .hero.has-profile-bg {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+}
+
+#view-epk .hero.has-profile-bg::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background-image: var(--epk-profile);
+    background-position: center 22%;
+    background-size: cover;
+    background-repeat: no-repeat;
+    opacity: 0.22;
+    filter: grayscale(1) contrast(1.05);
+    -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 55%, transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 0%, #000 55%, transparent 100%);
+    pointer-events: none;
+}
+
 .all-links-hero {
     min-height: auto;
     text-align: center;
