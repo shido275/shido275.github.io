@@ -61,6 +61,18 @@ main {
     padding-right: env(safe-area-inset-right);
 }
 
+/* ------------------------------------------------------------------- drawer */
+
+/* The nav drawer lives inside .site-header, which is sticky with z-index 100,
+   so the drawer's own z-index 101 is trapped in that stacking context. The
+   scrim mobile.js creates is a body-level sibling at z-index 100 and comes
+   later in the DOM, so it painted over the open drawer and caught every tap:
+   choosing EPK or All Links closed the menu instead of navigating. Scoping the
+   scrim below the header fixes the order without touching either element. */
+html body .xid-nav-scrim {
+    z-index: 90;
+}
+
 /* ------------------------------------------------------------------ phones */
 
 @media (max-width: 820px) {
