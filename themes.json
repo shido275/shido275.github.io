@@ -1,6 +1,6 @@
 {
   "default": "auckland-2077",
-  "rotate": false,
+  "rotate": true,
   "themes": [
     {
       "id": "opium",
