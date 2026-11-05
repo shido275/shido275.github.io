@@ -26,39 +26,137 @@
     }
   ],
   "platforms": [
-    { "label": "Spotify", "url": "https://open.spotify.com/artist/6FfLMEo15eD7S10n3oDG8a" },
-    { "label": "Apple Music", "url": "https://music.apple.com/us/artist/x-i-d/1626477785" },
-    { "label": "YouTube Music", "url": "https://www.youtube.com/@xidmusic" },
-    { "label": "Bandcamp", "url": "https://shido333.bandcamp.com/" },
-    { "label": "SoundCloud", "url": "https://soundcloud.com/maoriboishido" },
-    { "label": "Audiomack", "url": "https://audiomack.com/x-i-d-" },
-    { "label": "Tidal", "url": "https://tidal.com/artist/21535416" },
-    { "label": "BandLab", "url": "https://www.bandlab.com/maoriboishido" },
-    { "label": "Amazon Music", "url": "https://music.amazon.com/artists/B08KFVTPHF/x-i-d" }
+    {
+      "label": "Spotify",
+      "url": "https://open.spotify.com/artist/6FfLMEo15eD7S10n3oDG8a"
+    },
+    {
+      "label": "Apple Music",
+      "url": "https://music.apple.com/us/artist/x-i-d/1626477785"
+    },
+    {
+      "label": "YouTube Music",
+      "url": "https://www.youtube.com/@xidmusic"
+    },
+    {
+      "label": "Bandcamp",
+      "url": "https://shido333.bandcamp.com/"
+    },
+    {
+      "label": "SoundCloud",
+      "url": "https://soundcloud.com/maoriboishido"
+    },
+    {
+      "label": "Audiomack",
+      "url": "https://audiomack.com/x-i-d-"
+    },
+    {
+      "label": "Tidal",
+      "url": "https://tidal.com/artist/21535416"
+    },
+    {
+      "label": "BandLab",
+      "url": "https://www.bandlab.com/maoriboishido"
+    },
+    {
+      "label": "Amazon Music",
+      "url": "https://music.amazon.com/artists/B08KFVTPHF/x-i-d"
+    }
   ],
   "socials": [
-    { "label": "Instagram", "url": "https://www.instagram.com/maoriboishido", "handle": "@maoriboishido" },
-    { "label": "TikTok", "url": "https://www.tiktok.com/@xidmusic", "handle": "@xidmusic" },
-    { "label": "X / Twitter", "url": "https://x.com/etnadnisamok", "handle": "@etnadnisamok" },
-    { "label": "Youtube", "url": "https://www.youtube.com/@xidmusic", "handle": "Official Channel" },
-    { "label": "Kick", "url": "https://kick.com/thenativepvnk", "handle": "Live Sessions" },
-    { "label": "Twitch", "url": "https://www.twitch.tv/xidmusic", "handle": "Live sessions" },
-    { "label": "Rumble", "url": "https://rumble.com/user/yaboishido", "handle": "Unrestricted Live Sessions" },
-    { "label": "Reddit", "url": "https://www.reddit.com/r/Shidothafakest/", "handle": "Official Subreddit" },
-    { "label": "Discord", "url": "#", "handle": "Community invite" }
+    {
+      "label": "Instagram",
+      "url": "https://www.instagram.com/maoriboishido",
+      "handle": "@maoriboishido"
+    },
+    {
+      "label": "TikTok",
+      "url": "https://www.tiktok.com/@xidmusic",
+      "handle": "@xidmusic"
+    },
+    {
+      "label": "X / Twitter",
+      "url": "https://x.com/etnadnisamok",
+      "handle": "@etnadnisamok"
+    },
+    {
+      "label": "Youtube",
+      "url": "https://www.youtube.com/@xidmusic",
+      "handle": "Official Channel"
+    },
+    {
+      "label": "Kick",
+      "url": "https://kick.com/thenativepvnk",
+      "handle": "Live Sessions"
+    },
+    {
+      "label": "Twitch",
+      "url": "https://www.twitch.tv/xidmusic",
+      "handle": "Live sessions"
+    },
+    {
+      "label": "Rumble",
+      "url": "https://rumble.com/user/yaboishido",
+      "handle": "Unrestricted Live Sessions"
+    },
+    {
+      "label": "Reddit",
+      "url": "https://www.reddit.com/r/Shidothafakest/",
+      "handle": "Official Subreddit"
+    },
+    {
+      "label": "Discord",
+      "url": "#",
+      "handle": "Community invite"
+    },
+    {
+      "label": "Locals.com",
+      "url": "https://dabruddaz.locals.com/",
+      "handle": "DaBruddaz Community"
+    }
   ],
   "business": [
-    { "label": "EPK / Press Kit", "url": "#/epk" },
-    { "label": "Email Booking", "url": "mailto:shidomusic275@gmail.com" },
-    { "label": "Merch Store", "url": "#" },
-    { "label": "Tip Jar", "url": "#" },
-    { "label": "Patreon", "url": "#" },
-    { "label": "Portfolio", "url": "#/portfolio" }
+    {
+      "label": "EPK / Press Kit",
+      "url": "#/epk"
+    },
+    {
+      "label": "Email Booking",
+      "url": "mailto:shidomusic275@gmail.com"
+    },
+    {
+      "label": "Merch Store",
+      "url": "#"
+    },
+    {
+      "label": "Tip Jar",
+      "url": "#"
+    },
+    {
+      "label": "Patreon",
+      "url": "#"
+    },
+    {
+      "label": "Portfolio",
+      "url": "#/portfolio"
+    }
   ],
   "quickSocials": [
-    { "label": "Instagram", "url": "https://www.instagram.com/maoriboishido" },
-    { "label": "TikTok", "url": "https://www.tiktok.com/@xidmusic" },
-    { "label": "YouTube", "url": "https://www.youtube.com/@xidmusic" },
-    { "label": "MusicBrainz", "url": "https://musicbrainz.org/artist/b6060330-4802-450e-bd04-5e997ce61f43" }
+    {
+      "label": "Instagram",
+      "url": "https://www.instagram.com/maoriboishido"
+    },
+    {
+      "label": "TikTok",
+      "url": "https://www.tiktok.com/@xidmusic"
+    },
+    {
+      "label": "YouTube",
+      "url": "https://www.youtube.com/@xidmusic"
+    },
+    {
+      "label": "MusicBrainz",
+      "url": "https://musicbrainz.org/artist/b6060330-4802-450e-bd04-5e997ce61f43"
+    }
   ]
 }
