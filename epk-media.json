@@ -1,5 +1,18 @@
 {
-  "photos": [],
+  "photos": [
+    {
+      "src": "assets/photos/photo-1000021704.jpg",
+      "caption": "",
+      "alt": "1000021704",
+      "credit": ""
+    },
+    {
+      "src": "assets/photos/photo-1000021698.jpg",
+      "caption": "",
+      "alt": "1000021698",
+      "credit": ""
+    }
+  ],
   "videos": [
     {
       "title": "Official Videos & Performances",
