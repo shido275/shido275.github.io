@@ -191,7 +191,9 @@
 
         $("profile-plan").addEventListener("click", () => {
             try {
-                Admin.renderPlan("profile-output", buildPlan(), stats);
+                // renderPlan wants the summary, not the function that builds it.
+                const plan = buildPlan();
+                Admin.renderPlan("profile-output", plan, stats(plan));
             } catch (error) {
                 Admin.log(`Profile plan failed: ${error.message}`);
             }
