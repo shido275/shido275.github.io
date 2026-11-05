@@ -191,12 +191,13 @@
    item and view, and initialises whether or not DOMContentLoaded has already
    fired. async=false keeps them in order: the cores run before the tools that
    use them, and live.js wraps Admin.publish before anyone clicks Publish.
+   commit-fix.js rides last so its guard wraps the wrapper.
    ========================================================================== */
 (function () {
     "use strict";
     const here = document.currentScript;
     const anchor = here && here.nextSibling;
-    const tools = ["live.js", "background-core.js", "backgrounds.js", "beat-core.js", "beats.js", "visualizer.js"];
+    const tools = ["live.js", "background-core.js", "backgrounds.js", "beat-core.js", "beats.js", "visualizer.js", "commit-fix.js"];
 
     tools.forEach(src => {
         const script = document.createElement("script");
