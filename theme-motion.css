@@ -113,8 +113,8 @@ html[data-theme="ash"] .xid-motion__a {
 
 /* The phosphor tube redraws itself: a soft bright bar rolling down the screen
    every few seconds, on top of the flicker and cursor blink the theme's own
-   stylesheet already runs. This one only travels, so it carries its own
-   opacity instead of fading through keyframes. */
+   stylesheet already runs. The bar only moves, so it carries its own opacity
+   rather than fading through keyframes. */
 html[data-theme="terminal"] .xid-motion__a {
     inset: 0 0 auto 0;
     height: 24vh;
