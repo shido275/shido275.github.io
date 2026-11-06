@@ -1,0 +1,210 @@
+/* ==========================================================================
+   BEAT LICENSING — five fixed tiers and the exclusive commission form.
+   Token-driven on purpose: every theme recolours the same markup, and the
+   theme sheets only need a radius or bevel tweak if they want one.
+   ========================================================================== */
+
+.tier-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(215px, 1fr));
+    gap: 1rem;
+    align-items: stretch;
+}
+
+.tier-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+    padding: 1.3rem 1.2rem 1.15rem;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    box-shadow: var(--shadow);
+}
+
+.tier-step {
+    margin: 0;
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 0.56rem;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+}
+
+.tier-flag {
+    margin: 0;
+    align-self: flex-start;
+    padding: 0.1rem 0.5rem;
+    border: 1px solid var(--line-active);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 0.52rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+}
+
+.tier-card h3 {
+    margin: 0;
+    font-family: var(--heading);
+    font-size: 1.04rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    line-height: 1.2;
+}
+
+.tier-price {
+    margin: 0;
+    font-family: var(--display);
+    font-size: 2.05rem;
+    line-height: 1;
+    letter-spacing: 0.01em;
+}
+
+.tier-price span {
+    margin-right: 0.1em;
+    color: var(--muted);
+    font-size: 0.95rem;
+    vertical-align: super;
+}
+
+.tier-pitch {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.9rem;
+    font-style: italic;
+    line-height: 1.4;
+}
+
+.tier-terms {
+    display: grid;
+    gap: 0.38rem;
+    margin: 0.5rem 0 0;
+    padding: 0;
+    list-style: none;
+    font-size: 0.92rem;
+    line-height: 1.35;
+}
+
+.tier-terms li {
+    position: relative;
+    padding-left: 1.1rem;
+    color: var(--text);
+}
+
+.tier-terms li::before {
+    content: "+";
+    position: absolute;
+    left: 0;
+    top: 0;
+    color: var(--blood);
+    font-family: var(--mono);
+    font-size: 0.9em;
+}
+
+.tier-card.is-featured {
+    border-color: var(--line-active);
+    box-shadow: var(--shadow), 0 0 0 1px var(--line-active);
+}
+
+.tier-card .tier-cta {
+    width: 100%;
+    margin-top: auto;
+}
+
+.tier-notes {
+    display: grid;
+    gap: 0.65rem;
+    margin-top: 1.4rem;
+    max-width: 74ch;
+    color: var(--muted);
+    font-size: 0.95rem;
+}
+
+.tier-notes p {
+    margin: 0;
+}
+
+.tier-notes strong {
+    color: var(--text);
+}
+
+/* ---- Exclusive commissions ---- */
+
+.commission-shell {
+    display: grid;
+    grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+    gap: 1.4rem;
+    align-items: start;
+    margin-top: 0.4rem;
+}
+
+.commission-brief {
+    padding: 1.4rem 1.3rem;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    box-shadow: var(--shadow);
+}
+
+.commission-brief .tier-terms {
+    margin-top: 0.2rem;
+}
+
+.commission-brief-note {
+    margin: 1rem 0 0.5rem;
+    color: var(--muted);
+    font-size: 0.92rem;
+}
+
+#commission-form label.form-wide {
+    grid-column: 1 / -1;
+}
+
+#commission-form button[type="submit"] {
+    grid-column: 1 / -1;
+    justify-self: start;
+}
+
+.form-status {
+    grid-column: 1 / -1;
+    margin: 0;
+    min-height: 1.2rem;
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    letter-spacing: 0.04em;
+    line-height: 1.5;
+}
+
+.form-status.is-success {
+    color: var(--green);
+}
+
+.form-status.is-error {
+    color: var(--blood);
+}
+
+.form-status a {
+    color: var(--text);
+    text-decoration: underline;
+    text-underline-offset: 0.18em;
+}
+
+.form-honeypot {
+    position: absolute;
+    left: -9999px;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+}
+
+@media (max-width: 900px) {
+    .commission-shell {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+@media (max-width: 560px) {
+    .tier-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
