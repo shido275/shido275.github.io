@@ -21,11 +21,14 @@ html[data-theme="skux-deluxe"] {
     --skux-display: 'Audiowide', 'Trebuchet MS', Verdana, sans-serif;
     --skux-pixel: 'Silkscreen', 'Courier New', monospace;
     --skux-body: Verdana, Tahoma, 'Trebuchet MS', Geneva, sans-serif;
+    --skux-data: 'Courier New', 'Lucida Console', ui-monospace, monospace;
 
     --display: var(--skux-display);
     --heading: var(--skux-display);
     --body: var(--skux-body);
-    --mono: var(--skux-pixel);
+    /* Data text - track titles, BPM, credits - stays in a period monospace.
+       The pixel face is only for short labels, set rule by rule below. */
+    --mono: var(--skux-data);
 
     --xid-bg-blur: 6px;
 }
@@ -108,7 +111,7 @@ html[data-theme="skux-deluxe"] .brand:hover {
 
 /* Nav as little bevelled chips, the way every 2003 toolbar worked. */
 html[data-theme="skux-deluxe"] .site-nav a {
-    font-family: var(--mono);
+    font-family: var(--skux-pixel);
     font-size: 0.56rem;
     letter-spacing: 0.08em;
     color: #e6e2ff;
@@ -196,7 +199,7 @@ html[data-theme="skux-deluxe"] .eyebrow {
     border-radius: 999px;
     background: linear-gradient(180deg, #f4ffce, #b6ff3d 58%, #78c000);
     color: #0d1a00;
-    font-family: var(--mono);
+    font-family: var(--skux-pixel);
     font-size: 0.5rem;
     letter-spacing: 0.1em;
     text-transform: uppercase;
@@ -205,9 +208,18 @@ html[data-theme="skux-deluxe"] .eyebrow {
 }
 
 html[data-theme="skux-deluxe"] .panel-label {
+    font-family: var(--skux-pixel);
     font-size: 0.55rem;
     letter-spacing: 0.1em;
     color: var(--skux-cyan);
+    text-shadow: 0 0 12px rgba(46, 230, 255, 0.6);
+}
+
+/* Short labels only: pixel type at this size is a caption, not a paragraph. */
+html[data-theme="skux-deluxe"] .time-label,
+html[data-theme="skux-deluxe"] .stat-grid div strong,
+html[data-theme="skux-deluxe"] footer {
+    font-family: var(--skux-pixel);
 }
 
 /* --------------------------------------------------------------- panels */
@@ -387,6 +399,43 @@ html[data-theme="skux-deluxe"] #music-tabs .button {
     padding: 0.5rem 0.9rem;
 }
 
+/* Player controls are a chrome toolbar, not six pink buttons: only the main
+   play/primary action stays in the theme's colour. */
+html[data-theme="skux-deluxe"] .bar-btn,
+html[data-theme="skux-deluxe"] .control-btn {
+    color: #171034;
+    border-radius: 10px;
+    border-color: rgba(255, 255, 255, 0.92);
+    background: linear-gradient(180deg, #ffffff 0%, #e3e7f9 44%, #a9b0cf 56%, #eef1ff 100%);
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.85);
+    box-shadow:
+        inset 0 2px 0 rgba(255, 255, 255, 0.95),
+        inset 0 -2px 4px rgba(60, 52, 96, 0.35),
+        0 3px 0 #6e6a93,
+        0 8px 16px rgba(0, 0, 0, 0.35);
+}
+
+html[data-theme="skux-deluxe"] .bar-btn:hover,
+html[data-theme="skux-deluxe"] .control-btn:hover {
+    transform: translateY(-2px);
+    filter: saturate(1.1) brightness(1.05);
+    box-shadow:
+        inset 0 2px 0 rgba(255, 255, 255, 1),
+        inset 0 -2px 4px rgba(60, 52, 96, 0.35),
+        0 5px 0 #6e6a93,
+        0 12px 20px rgba(0, 0, 0, 0.4),
+        0 0 20px rgba(46, 230, 255, 0.45);
+}
+
+html[data-theme="skux-deluxe"] .bar-btn:active,
+html[data-theme="skux-deluxe"] .control-btn:active {
+    transform: translateY(2px);
+    box-shadow:
+        inset 0 2px 6px rgba(60, 52, 96, 0.45),
+        inset 0 1px 0 rgba(255, 255, 255, 0.8),
+        0 1px 0 #6e6a93;
+}
+
 /* ------------------------------------------------------------ artwork */
 
 html[data-theme="skux-deluxe"] .release-card img,
@@ -431,7 +480,6 @@ html[data-theme="skux-deluxe"] #global-player-title {
 html[data-theme="skux-deluxe"] #global-player-artist { color: var(--skux-lime); }
 
 html[data-theme="skux-deluxe"] .time-label {
-    font-family: var(--mono);
     font-size: 0.56rem;
     letter-spacing: 0.04em;
     color: #cfc9ff;
@@ -519,7 +567,9 @@ html[data-theme="skux-deluxe"] footer {
     margin-top: 2rem;
     border-top: 2px solid rgba(255, 255, 255, 0.18);
     color: #b9b1e8;
-    font-size: 0.62rem;
+    font-size: 0.58rem;
+    letter-spacing: 0.02em;
+    line-height: 1.9;
 }
 
 html[data-theme="skux-deluxe"] footer::before {
