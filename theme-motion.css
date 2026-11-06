@@ -113,10 +113,12 @@ html[data-theme="ash"] .xid-motion__a {
 
 /* The phosphor tube redraws itself: a soft bright bar rolling down the screen
    every few seconds, on top of the flicker and cursor blink the theme's own
-   stylesheet already runs. */
+   stylesheet already runs. This one only travels, so it carries its own
+   opacity instead of fading through keyframes. */
 html[data-theme="terminal"] .xid-motion__a {
     inset: 0 0 auto 0;
     height: 24vh;
+    opacity: 1;
     background: linear-gradient(
         to bottom,
         transparent 0%,
@@ -136,10 +138,11 @@ html[data-theme="terminal"] .xid-motion__a {
 /* -------------------------------------------------------------- still looks */
 
 /* Someone who asked their system for less movement still gets every colour,
-   frame and typeface - just not the drift. */
+   frame and typeface - just not the drift. The per-theme rules above are two
+   classes deep, so this has to match them and insist. */
 @media (prefers-reduced-motion: reduce) {
-    .xid-motion span {
-        animation: none;
-        opacity: 0;
+    html[data-theme] .xid-motion span {
+        animation: none !important;
+        opacity: 0 !important;
     }
 }
