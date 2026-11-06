@@ -150,6 +150,20 @@
     polish.href = "style-perf.css";
     document.head.appendChild(polish);
 
+    /* Every theme moves: theme-motion.css paints these two fixed, empty layers
+       while its theme is active. They are mounted straight away so switching
+       theme never flashes a gap, and they take no pointer events. */
+    const motion = document.createElement("link");
+    motion.rel = "stylesheet";
+    motion.href = "theme-motion.css";
+    document.head.appendChild(motion);
+
+    const stage = document.createElement("div");
+    stage.className = "xid-motion";
+    stage.setAttribute("aria-hidden", "true");
+    stage.innerHTML = '<span class="xid-motion__a"></span><span class="xid-motion__b"></span>';
+    (document.body || document.documentElement).appendChild(stage);
+
     ["feed.js", "background.js", "visualizer.js", "mobile.js", "profile.js"].forEach(src => {
         const script = document.createElement("script");
         script.src = src;

@@ -1,0 +1,145 @@
+/* ==========================================================================
+   Theme motion - every look gets its own ambient movement.
+
+   themes.json carries nothing but colours, so a theme only moves if a sheet
+   makes it move. Two already did: Auckland 2077 pans a city skyline behind the
+   page and animates the header, bands, cards and buttons, and Neon Terminal
+   flickers its glass and blinks a cursor. Opium and Ash were still apart from
+   the shared grain and scan drift, and Terminal hides even those.
+
+   themes.js mounts two fixed, empty layers (.xid-motion__a / __b) once, and
+   this sheet paints them while a theme is active. Scoping every rule to
+   html[data-theme="..."] means a theme only ever animates its own look.
+   auckland-2077 is deliberately absent: it is already the most animated theme
+   on the site and a second overlay would only fight it.
+
+   Cost: the layers are fixed, pointer-events: none, and animated with
+   transform and opacity only, so each is composited once and then moved by the
+   GPU. Nothing repaints on scroll and nothing can be clicked into. They sit
+   under the grain (z 9000) and scan (z 8999) layers the site already paints,
+   so the order of atmosphere is grain > scan > theme motion > page.
+
+   Motion is a desktop decoration: style-perf.css already stops every animation
+   on touch devices, and the reduced-motion block at the bottom of this file
+   does the same for anyone who asks their system for less movement.
+   ========================================================================== */
+
+.xid-motion {
+    position: fixed;
+    inset: 0;
+    z-index: 8998;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+.xid-motion span {
+    position: absolute;
+    inset: 0;
+    display: block;
+    opacity: 0;
+}
+
+/* -------------------------------------------------------------------- opium */
+
+/* A blood haze hanging over the top of the page, breathing and drifting like
+   light through a cathedral window. Two gradients so it never reads as one
+   flat wash. */
+html[data-theme="opium"] .xid-motion__a {
+    inset: -12% 0 0 0;
+    background:
+        radial-gradient(62% 44% at 50% 0%, rgba(212, 21, 21, 0.30), transparent 72%),
+        radial-gradient(40% 32% at 84% 34%, rgba(212, 21, 21, 0.13), transparent 74%);
+    animation: opiumHaze 26s ease-in-out infinite alternate;
+}
+
+@keyframes opiumHaze {
+    0% {
+        transform: translate3d(0, 0, 0) scale(1);
+        opacity: 0.5;
+    }
+    50% {
+        transform: translate3d(-1.5%, 1.2%, 0) scale(1.05);
+        opacity: 0.9;
+    }
+    100% {
+        transform: translate3d(1.5%, -0.8%, 0) scale(1.02);
+        opacity: 0.6;
+    }
+}
+
+/* The vignette closes in and opens out, slower than the haze, so the whole
+   frame feels like it is breathing. */
+html[data-theme="opium"] .xid-motion__b {
+    background: radial-gradient(ellipse at 50% 42%, transparent 44%, rgba(0, 0, 0, 0.58) 100%);
+    animation: opiumVignette 9s ease-in-out infinite;
+}
+
+@keyframes opiumVignette {
+    0%, 100% { opacity: 0.55; }
+    50% { opacity: 1; }
+}
+
+/* ---------------------------------------------------------------------- ash */
+
+/* Ash is the print-like theme, so its movement is a sheet of light travelling
+   across paper: one wide diagonal band, drifting edge to edge. The band is
+   oversized and translated rather than repainted. */
+html[data-theme="ash"] .xid-motion__a {
+    inset: -40% -60%;
+    background: linear-gradient(
+        115deg,
+        transparent 36%,
+        rgba(230, 228, 223, 0.055) 47%,
+        rgba(230, 228, 223, 0.11) 50%,
+        rgba(230, 228, 223, 0.055) 53%,
+        transparent 64%
+    );
+    animation: ashSweep 21s ease-in-out infinite alternate;
+}
+
+@keyframes ashSweep {
+    0% {
+        transform: translate3d(-26%, 0, 0);
+        opacity: 0.35;
+    }
+    50% { opacity: 0.95; }
+    100% {
+        transform: translate3d(26%, 0, 0);
+        opacity: 0.35;
+    }
+}
+
+/* ----------------------------------------------------------------- terminal */
+
+/* The phosphor tube redraws itself: a soft bright bar rolling down the screen
+   every few seconds, on top of the flicker and cursor blink the theme's own
+   stylesheet already runs. */
+html[data-theme="terminal"] .xid-motion__a {
+    inset: 0 0 auto 0;
+    height: 24vh;
+    background: linear-gradient(
+        to bottom,
+        transparent 0%,
+        rgba(87, 255, 122, 0.05) 35%,
+        rgba(87, 255, 122, 0.16) 60%,
+        rgba(87, 255, 122, 0.05) 82%,
+        transparent 100%
+    );
+    animation: termRefresh 7.5s linear infinite;
+}
+
+@keyframes termRefresh {
+    0% { transform: translate3d(0, -100%, 0); }
+    100% { transform: translate3d(0, 430%, 0); }
+}
+
+/* -------------------------------------------------------------- still looks */
+
+/* Someone who asked their system for less movement still gets every colour,
+   frame and typeface - just not the drift. */
+@media (prefers-reduced-motion: reduce) {
+    .xid-motion span {
+        animation: none;
+        opacity: 0;
+    }
+}
