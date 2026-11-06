@@ -9,6 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style-licenses.css">
 </head>
 
 <body>
@@ -326,8 +327,8 @@
                     <p class="lead">Browse the full catalog, listen to preview streams, and secure licensing rights directly.</p>
                 </div>
                 <div class="hero-panel">
-                    <p class="panel-label">Payment setup</p>
-                    <p>Static checkout needs an external payment link. Add PayPal, Stripe Payment Link, BeatStars, Airbit, Gumroad, or Ko-fi URLs in each beat metadata JSON file.</p>
+                    <p class="panel-label">How to buy</p>
+                    <p>Pick a tier, send the beat name, and an invoice comes back with the license attached. Beat-by-beat payment links drop into each beat's metadata JSON once checkout is connected.</p>
                 </div>
             </section>
 
@@ -339,21 +340,152 @@
                 <div class="beat-grid" id="beat-store" aria-live="polite"></div>
             </section>
 
-            <section class="section-band">
+            <section class="section-band" id="license-tiers">
                 <div class="section-heading">
-                    <p class="eyebrow">Metadata example</p>
-                    <h2>How to add prices</h2>
+                    <p class="eyebrow">Terms at a glance</p>
+                    <h2>Beat License Tiers</h2>
+                    <p>Five fixed packages, priced in USD. Every one is non-exclusive: the beat stays on sale, you get exactly the rights listed, and the license is written up in your name before any files land. Pick the smallest tier that covers what you plan to do with the song.</p>
                 </div>
-                <pre><code>{
-  "title": "Midnight Signal",
-  "producer": "X/i\\D",
-  "bpm": 142,
-  "key": "F minor",
-  "price": "$49",
-  "license": "Non-exclusive MP3/WAV",
-  "paymentUrl": "https://paypal.me/YOURNAME/49",
-  "cover": "cover.jpg"
-}</code></pre>
+                <div class="tier-grid">
+                    <article class="tier-card">
+                        <p class="tier-step">Tier 01</p>
+                        <h3>MP3 Lease</h3>
+                        <p class="tier-price"><span>$</span>14.99</p>
+                        <p class="tier-pitch">One song, one release.</p>
+                        <ul class="tier-terms">
+                            <li>Untagged MP3 at 320 kbps</li>
+                            <li>10,000 audio streams</li>
+                            <li>5,000 distribution copies</li>
+                            <li>1 monetised music video</li>
+                            <li>Unlimited non-profit performances</li>
+                            <li>Radio airplay on request</li>
+                        </ul>
+                        <a class="button tier-cta" href="mailto:shidomusic275@gmail.com?subject=MP3%20Lease%20%28USD%20%2414.99%29&body=Tier%3A%20MP3%20Lease%0ABeat%28s%29%20I%20want%3A%20%0AArtist%20name%3A%20%0ARelease%20plan%3A%20">Buy MP3 Lease</a>
+                    </article>
+
+                    <article class="tier-card">
+                        <p class="tier-step">Tier 02</p>
+                        <h3>WAV Lease</h3>
+                        <p class="tier-price"><span>$</span>24.99</p>
+                        <p class="tier-pitch">The clean WAV.</p>
+                        <ul class="tier-terms">
+                            <li>Untagged WAV + MP3</li>
+                            <li>50,000 audio streams</li>
+                            <li>15,000 distribution copies</li>
+                            <li>2 monetised music videos</li>
+                            <li>5 paid performances</li>
+                            <li>Unlimited non-profit performances</li>
+                        </ul>
+                        <a class="button tier-cta" href="mailto:shidomusic275@gmail.com?subject=WAV%20Lease%20%28USD%20%2424.99%29&body=Tier%3A%20WAV%20Lease%0ABeat%28s%29%20I%20want%3A%20%0AArtist%20name%3A%20%0ARelease%20plan%3A%20">Buy WAV Lease</a>
+                    </article>
+
+                    <article class="tier-card is-featured">
+                        <p class="tier-step">Tier 03</p>
+                        <p class="tier-flag">Most picked</p>
+                        <h3>Premium Lease</h3>
+                        <p class="tier-price"><span>$</span>59.99</p>
+                        <p class="tier-pitch">No stream ceiling.</p>
+                        <ul class="tier-terms">
+                            <li>Untagged WAV + MP3</li>
+                            <li>Unlimited audio and video streams</li>
+                            <li>100,000 distribution copies</li>
+                            <li>Unlimited music videos</li>
+                            <li>Unlimited paid performances</li>
+                            <li>Radio broadcasting rights</li>
+                        </ul>
+                        <a class="button tier-cta" href="mailto:shidomusic275@gmail.com?subject=Premium%20Lease%20%28USD%20%2459.99%29&body=Tier%3A%20Premium%20Lease%0ABeat%28s%29%20I%20want%3A%20%0AArtist%20name%3A%20%0ARelease%20plan%3A%20">Buy Premium Lease</a>
+                    </article>
+
+                    <article class="tier-card">
+                        <p class="tier-step">Tier 04</p>
+                        <h3>Unlimited Trackout Release</h3>
+                        <p class="tier-price"><span>$</span>79.99</p>
+                        <p class="tier-pitch">Every stem, no limits.</p>
+                        <ul class="tier-terms">
+                            <li>Everything in Premium Lease</li>
+                            <li>Full trackout stems, all instruments</li>
+                            <li>Unlimited distribution copies</li>
+                            <li>Podcast, sync and game use</li>
+                            <li>Unlimited paid performances</li>
+                            <li>Priority file delivery</li>
+                        </ul>
+                        <a class="button tier-cta" href="mailto:shidomusic275@gmail.com?subject=Unlimited%20Trackout%20Release%20%28USD%20%2479.99%29&body=Tier%3A%20Unlimited%20Trackout%20Release%0ABeat%28s%29%20I%20want%3A%20%0AArtist%20name%3A%20%0ARelease%20plan%3A%20">Buy Unlimited Trackout Release</a>
+                    </article>
+
+                    <article class="tier-card">
+                        <p class="tier-step">Tier 05</p>
+                        <p class="tier-flag">Full package</p>
+                        <h3>Complete Package</h3>
+                        <p class="tier-price"><span>$</span>125.99</p>
+                        <p class="tier-pitch">Made together, start to finish.</p>
+                        <ul class="tier-terms">
+                            <li>Everything in Unlimited Trackout</li>
+                            <li>Mix and master of the finished record</li>
+                            <li>One revision pass included</li>
+                            <li>Split sheet and license drafted</li>
+                            <li>Cover art starter template</li>
+                            <li>48-hour turnaround on files</li>
+                        </ul>
+                        <a class="button tier-cta" href="mailto:shidomusic275@gmail.com?subject=Complete%20Package%20%28USD%20%24125.99%29&body=Tier%3A%20Complete%20Package%0ABeat%28s%29%20I%20want%3A%20%0AArtist%20name%3A%20%0ARelease%20plan%3A%20">Buy Complete Package</a>
+                    </article>
+                </div>
+                <div class="tier-notes">
+                    <p><strong>Credit.</strong> Every release carries "Prod. by X/i\D" in the title, description or credits, and a split sheet comes with the license.</p>
+                    <p><strong>What stays mine.</strong> Leases grant the rights above; the master and the publishing stay with X/i\D until an exclusive is signed. You can't resell or re-upload the instrumental on its own.</p>
+                    <p><strong>Upgrades.</strong> Move up a tier later and you pay only the difference, with the new terms backdated to your release date.</p>
+                    <p><strong>Checkout.</strong> Tiers are invoiced by email for now, so each button starts the conversation with the tier already named. Beat-by-beat payment links can be added to the metadata JSON as checkout goes live.</p>
+                </div>
+            </section>
+
+            <section class="section-band" id="exclusive-commissions">
+                <div class="section-heading">
+                    <p class="eyebrow">Bonus tier</p>
+                    <h2>Exclusive Commissions</h2>
+                    <p>An exclusive takes the beat off the store for good and puts the rights in your name alone. Fill the brief in and it lands in my inbox with every detail attached, so the reply comes back with a quote, timeline and contract rather than a list of questions.</p>
+                </div>
+                <div class="commission-shell">
+                    <div class="commission-brief">
+                        <p class="panel-label">What you're getting</p>
+                        <ul class="tier-terms">
+                            <li>Exclusive rights to one catalogue beat, removed from sale</li>
+                            <li>Or a custom exclusive produced to your reference</li>
+                            <li>WAV, MP3 and full trackouts delivered</li>
+                            <li>Signed contract and split sheet in your name</li>
+                            <li>Unlimited streams, sales, videos, performances and radio</li>
+                            <li>One revision pass on the mix if I'm mastering it</li>
+                        </ul>
+                        <p class="commission-brief-note">Typical range sits between $250 and $900 depending on the beat and what you need around it. Nothing is charged until you've seen the quote and said yes.</p>
+                        <p class="muted">Prefer to write it out yourself? <a href="mailto:shidomusic275@gmail.com?subject=Exclusive commission">shidomusic275@gmail.com</a></p>
+                    </div>
+                    <form class="submission-form" id="commission-form">
+                        <label>Name<input name="name" autocomplete="name" required></label>
+                        <label>Email<input name="email" type="email" autocomplete="email" required></label>
+                        <label>Artist / project<input name="artist" autocomplete="organization"></label>
+                        <label>Beat or reference<input name="beat" placeholder="Beat name, link, or &quot;new production&quot;" required></label>
+                        <label>Starting point
+                            <select name="tier">
+                                <option>Exclusive on a catalogue beat</option>
+                                <option>Custom exclusive produced to brief</option>
+                                <option>Upgrade from a lease I already hold</option>
+                                <option>Not sure yet, advise me</option>
+                            </select>
+                        </label>
+                        <label>Budget
+                            <select name="budget">
+                                <option>Under $250</option>
+                                <option>$250 - $450</option>
+                                <option>$450 - $700</option>
+                                <option>$700+</option>
+                                <option>Let's talk</option>
+                            </select>
+                        </label>
+                        <label class="form-wide">How you'll use it<textarea name="usage" rows="4" placeholder="Release plans, features, visuals, placement, timeline..." required></textarea></label>
+                        <label class="form-wide">Anything else<textarea name="notes" rows="3" placeholder="References, deadlines, questions about the terms"></textarea></label>
+                        <input class="form-honeypot" type="text" name="_honey" tabindex="-1" autocomplete="off" aria-hidden="true">
+                        <button class="button primary" type="submit">Send Commission Brief</button>
+                        <p class="form-status" data-commission-status role="status" aria-live="polite">Goes straight to shidomusic275@gmail.com. Expect a reply within two business days.</p>
+                    </form>
+                </div>
             </section>
         </section>
 
@@ -498,6 +630,7 @@
     <script src="themes.js"></script>
     <script src="epk-media.js"></script>
     <script src="site.js"></script>
+    <script src="commission.js"></script>
 </body>
 
 </html>
