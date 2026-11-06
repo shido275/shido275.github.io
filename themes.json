@@ -107,6 +107,33 @@
         "--brand-glow": "rgba(216, 212, 204, 0.22)",
         "--header-line": "rgba(230, 228, 223, 0.16)"
       }
+    },
+    {
+      "id": "skux-deluxe",
+      "label": "Skux Deluxe",
+      "era": "Y2K / 2000s",
+      "css": "theme-skux-deluxe.css",
+      "note": "Chrome, bubblegum and lime: glossy bevelled buttons, metallic display type, pixel labels and a twinkling starfield. A homepage from 2003 with swagger. Owns the layout feel, the type and the bevels; these are the colours it paints with.",
+      "vars": {
+        "--bg": "#0b0a1f",
+        "--bg-2": "#151033",
+        "--surface": "rgba(28, 22, 60, 0.72)",
+        "--surface-2": "rgba(42, 32, 86, 0.86)",
+        "--text": "#f6f2ff",
+        "--muted": "#a79bd6",
+        "--line": "rgba(255, 43, 209, 0.26)",
+        "--line-active": "rgba(46, 230, 255, 0.7)",
+        "--blood": "#ff2bd1",
+        "--blood-soft": "rgba(255, 43, 209, 0.30)",
+        "--cyan": "#2ee6ff",
+        "--gold": "#ffe95c",
+        "--rose": "#ff7ad9",
+        "--green": "#b6ff3d",
+        "--shadow": "0 18px 44px rgba(5, 2, 18, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.5)",
+        "--shadow-neon": "0 0 18px rgba(46, 230, 255, 0.40), 0 0 34px rgba(255, 43, 209, 0.25)",
+        "--brand-glow": "rgba(255, 43, 209, 0.55)",
+        "--header-line": "rgba(255, 43, 209, 0.35)"
+      }
     }
   ]
 }

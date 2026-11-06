@@ -135,6 +135,52 @@ html[data-theme="terminal"] .xid-motion__a {
     100% { transform: translate3d(0, 430%, 0); }
 }
 
+/* ------------------------------------------------------------- skux deluxe */
+
+/* Y2K is a screen, so it glitters: a holographic sheen - pink into cyan - slides
+   across the glass, and a starfield twinkles over the page beneath it. The
+   stars are a tiled dot pattern, so the layer is painted once and only its
+   opacity moves. */
+html[data-theme="skux-deluxe"] .xid-motion__a {
+    inset: -34% -58%;
+    background: linear-gradient(
+        104deg,
+        transparent 36%,
+        rgba(255, 43, 209, 0.10) 45%,
+        rgba(255, 255, 255, 0.14) 49%,
+        rgba(46, 230, 255, 0.12) 54%,
+        transparent 64%
+    );
+    animation: skuxSheen 16s ease-in-out infinite alternate;
+}
+
+@keyframes skuxSheen {
+    0% {
+        transform: translate3d(-30%, 0, 0);
+        opacity: 0.5;
+    }
+    50% { opacity: 1; }
+    100% {
+        transform: translate3d(30%, 0, 0);
+        opacity: 0.5;
+    }
+}
+
+html[data-theme="skux-deluxe"] .xid-motion__b {
+    background-image:
+        radial-gradient(1.5px 1.5px at 26px 34px, #ffffff, transparent 100%),
+        radial-gradient(1.5px 1.5px at 138px 96px, rgba(255, 255, 255, 0.85), transparent 100%),
+        radial-gradient(2px 2px at 188px 168px, #b6ff3d, transparent 100%),
+        radial-gradient(1.5px 1.5px at 68px 206px, #2ee6ff, transparent 100%);
+    background-size: 240px 240px, 240px 240px, 320px 320px, 320px 320px;
+    animation: skuxStars 5.5s ease-in-out infinite;
+}
+
+@keyframes skuxStars {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 0.9; }
+}
+
 /* -------------------------------------------------------------- still looks */
 
 /* Someone who asked their system for less movement still gets every colour,
