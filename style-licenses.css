@@ -208,3 +208,11 @@
         grid-template-columns: minmax(0, 1fr);
     }
 }
+
+/* Skux Deluxe draws every panel with a 16px bevel, so the tier cards follow
+   instead of standing square beside them. */
+html[data-theme="skux-deluxe"] .tier-card,
+html[data-theme="skux-deluxe"] .commission-brief {
+    border-width: 2px;
+    border-radius: 16px;
+}
