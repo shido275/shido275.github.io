@@ -182,5 +182,48 @@ test("beat: published entries read back with their folder", () => {
     assert.equal(K.normalizeBpm(""), "");
 });
 
+test("beat: stems and extra content ZIPs are written and listed in the manifest", () => {
+    const plan = K.planBeats({
+        beats: [{
+            file: file("tagged.mp3"),
+            untaggedFile: file("clean.wav"),
+            stemsFile: file("stems.zip", 4096),
+            extrasFile: file("extras.zip", 2048),
+            title: "Full Package Beat",
+            paymentUrls: {
+                "mp3-lease": "https://buy.stripe.com/test_abc123",
+                "made-up": "https://evil.example/x"
+            }
+        }],
+        existing: []
+    });
+    const paths = plan.writes.map(write => write.path);
+    assert(paths.includes("Beats/full-package-beat/stems.zip"), paths.join(","));
+    assert(paths.includes("Beats/full-package-beat/extras.zip"), paths.join(","));
+    const manifest = JSON.parse(plan.writes.find(write => write.path === K.BEATS_PATH).text);
+    assert.equal(manifest[0].stemsUrl, "Beats/full-package-beat/stems.zip");
+    assert.equal(manifest[0].extrasUrl, "Beats/full-package-beat/extras.zip");
+    assert.deepEqual(manifest[0].paymentUrls, { "mp3-lease": "https://buy.stripe.com/test_abc123" });
+});
+
+test("beat: a non-zip archive is reported, and removal deletes stems and extras", () => {
+    const refused = K.planBeats({ beats: [{ file: file("a.mp3"), stemsFile: file("stems.txt"), title: "Wrong" }], existing: [] });
+    assert(refused.warnings.some(warning => /not a .zip/.test(warning)), refused.warnings.join(","));
+
+    const removed = K.planBeats({
+        beats: [],
+        existing: [{
+            title: "Old",
+            path: "Beats/old/Old.mp3",
+            audioUrl: "Beats/old/Old.mp3",
+            stemsUrl: "Beats/old/stems.zip",
+            extrasUrl: "Beats/old/extras.zip"
+        }]
+    });
+    const deleted = removed.writes.filter(write => write.delete).map(write => write.path);
+    assert(deleted.includes("Beats/old/stems.zip"), deleted.join(","));
+    assert(deleted.includes("Beats/old/extras.zip"), deleted.join(","));
+});
+
 console.log(`\n${fails.length ? "FAILED" : "all passed"}: ${pass} passed, ${fails.length} failed`);
 process.exit(fails.length ? 1 : 0);

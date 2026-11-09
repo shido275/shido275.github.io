@@ -122,6 +122,38 @@ versions it is carrying.
 Uploads go to `Beats/<folder>/` (the folder defaults to the title). Every beat
 is mirrored into `beats-manifest.json`, which is what the site reads; the
 per-beat JSON beside the audio is kept for anything that scans the folders.
+Optional **Stems / trackout ZIP** and **Extra content ZIP** uploads ride along
+in the same folder. The site only lists audio in `Beats/`, so a ZIP never shows
+up as a second beat.
+
+### Stripe payment links
+
+Adding a beat creates a Stripe Payment Link for every licence tier that beat can
+actually deliver, so the store never advertises a tier it cannot fulfil:
+
+| Tiers | Needs |
+| --- | --- |
+| MP3 Lease, WAV Lease, Premium Lease | an untagged (clean) cut |
+| Unlimited Trackout, Complete Package, R3B0UND | the untagged cut **and** a stems ZIP |
+
+A beat with only a tagged preview gets no links, because there is nothing clean
+to send a buyer. The cheapest link becomes the beat's `paymentUrl`, which is
+the **Buy** button on `#/beats`; every link is stored per tier in
+`beats-manifest.json` as `paymentUrls`, keyed by tier id.
+
+Setup, once per browser:
+
+1. Stripe → **Developers → API keys → Create restricted key**.
+2. Give it **Payment Links: Write** (if creating a link complains about
+   products or prices, add **Products: Write** and **Prices: Write**).
+3. Paste it into **Beat Store → Stripe payment links** and press **Save key**.
+
+The key stays in this browser's `localStorage` and is sent only to
+`api.stripe.com`; it is never committed and never reaches the site. **Forget
+key** wipes it. Prefer a test key (`rk_test_…`) until a real link is needed:
+test links are visibly test-mode. Links are immutable — a beat is only given a
+link for a tier it does not have one for yet, and regenerating means new links,
+so old ones stay valid.
 
 ## Background
 
@@ -204,9 +236,10 @@ rows *kept*.
 ```bash
 node admin/import-core.test.js
 node admin/background-beat.test.js
+node admin/stripe-core.test.js
 node admin/feed.test.js
 ```
 
 Covers catalogue entries and order, `info.json` credits, path safety, media
 planning (including YouTube/Vimeo parsing), link validation, background and beat
-planning, and the site's data layer.
+planning, Stripe tier eligibility and request bodies, and the site's data layer.
