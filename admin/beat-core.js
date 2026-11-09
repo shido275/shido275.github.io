@@ -24,6 +24,9 @@
     const DEFAULT_ARTIST = "X/i\\D";
     const DEFAULT_LICENSE = "Lease";
     const MAX_FILE_BYTES = 45 * 1024 * 1024;
+    const ZIP_EXTENSIONS = [".zip"];
+    // Only links the site can actually send a buyer to are kept.
+    const CHECKOUT_PREFIX = "https://buy.stripe.com/";
 
     function ext(name) {
         const index = String(name).lastIndexOf(".");
@@ -41,6 +44,21 @@
 
     function isImage(name) {
         return IMAGE_EXTENSIONS.includes(ext(name));
+    }
+
+    function isZip(name) {
+        return ZIP_EXTENSIONS.includes(ext(name));
+    }
+
+    /* A per-tier map of Stripe links, with anything unexpected dropped. */
+    function checkoutLinks(source) {
+        const links = {};
+        if (!source || typeof source !== "object") return links;
+        Object.keys(source).forEach(tier => {
+            const url = clean(source[tier]);
+            if (url && url.startsWith(CHECKOUT_PREFIX)) links[tier] = url;
+        });
+        return links;
     }
 
     function clean(value) {
@@ -84,8 +102,9 @@
         return parts.length >= 3 && parts[0] === BEAT_DIR ? parts[1] : "";
     }
 
-    /* beats: [{ file?, coverFile?, title, folder?, artist, bpm, key, price,
-                license, paymentUrl, audioUrl?, coverUrl?, path? }]
+    /* beats: [{ file?, coverFile?, stemsFile?, extrasFile?, title, folder?,
+                artist, bpm, key, price, license, paymentUrl, paymentUrls,
+                audioUrl?, coverUrl?, path? }]
        existing: the beats-manifest.json currently on the branch */
     function planBeats(options) {
         const opts = options || {};
@@ -166,6 +185,29 @@
                 warnings.push(`${beat.coverFile.name} is not an image (.jpg, .png, .webp) - cover skipped.`);
             }
 
+            // Trackout stems and any extra content ride along beside the audio;
+            // they are what make the higher licence tiers deliverable. The site
+            // only lists audio in Beats/, so a ZIP never shows up as a beat.
+            let stemsPath = clean(beat.stemsUrl);
+            let extrasPath = clean(beat.extrasUrl);
+            const archives = [
+                { file: beat.stemsFile, kind: "beat-stems", set: path => { stemsPath = path; } },
+                { file: beat.extrasFile, kind: "beat-extras", set: path => { extrasPath = path; } }
+            ];
+            archives.forEach(archive => {
+                if (!archive.file) return;
+                if (!isZip(archive.file.name)) {
+                    warnings.push(`${archive.file.name} is not a .zip - ignored.`);
+                    return;
+                }
+                if (archive.file.size > MAX_FILE_BYTES) {
+                    warnings.push(`${archive.file.name} is ${formatBytes(archive.file.size)} - GitHub may reject blobs over 45 MB.`);
+                }
+                const target = uniquePath(`${BEAT_DIR}/${folder}/${safeSegment(archive.file.name)}`);
+                archive.set(target);
+                writes.push({ path: target, kind: archive.kind, file: archive.file });
+            });
+
             const entry = {
                 title,
                 artist: clean(beat.artist) || DEFAULT_ARTIST,
@@ -174,6 +216,9 @@
                 price: clean(beat.price),
                 license: clean(beat.license) || DEFAULT_LICENSE,
                 paymentUrl: clean(beat.paymentUrl),
+                paymentUrls: checkoutLinks(beat.paymentUrls),
+                stemsUrl: stemsPath,
+                extrasUrl: extrasPath,
                 coverUrl: coverPath,
                 audioUrl: audioPath,
                 tagged: Boolean(taggedPath),
@@ -195,6 +240,9 @@
                         price: entry.price,
                         license: entry.license,
                         paymentUrl: entry.paymentUrl,
+                        paymentUrls: entry.paymentUrls,
+                        stemsUrl: entry.stemsUrl,
+                        extrasUrl: entry.extrasUrl,
                         tagged: entry.tagged,
                         clean: entry.cleanUrl ? entry.cleanUrl.split("/").pop() : undefined,
                         cover: entry.coverUrl ? entry.coverUrl.split("/").pop() : undefined
@@ -206,6 +254,8 @@
         const keptAudio = new Set(entries.map(entry => entry.audioUrl.toLowerCase()));
         const keptCover = new Set(entries.map(entry => entry.coverUrl.toLowerCase()).filter(Boolean));
         const keptClean = new Set(entries.map(entry => entry.cleanUrl.toLowerCase()).filter(Boolean));
+        const keptStems = new Set(entries.map(entry => entry.stemsUrl.toLowerCase()).filter(Boolean));
+        const keptExtras = new Set(entries.map(entry => entry.extrasUrl.toLowerCase()).filter(Boolean));
         const deleting = new Set();
         const removable = path => String(path || "").startsWith(`${BEAT_DIR}/`) || String(path || "").startsWith(`${CLEAN_DIR}/`);
 
@@ -218,6 +268,10 @@
             if (cover && removable(cover) && !keptCover.has(cover.toLowerCase())) paths.push(cover);
             const cleanCopy = clean(item && item.cleanUrl);
             if (cleanCopy && removable(cleanCopy) && !keptClean.has(cleanCopy.toLowerCase())) paths.push(cleanCopy);
+            const stemsCopy = clean(item && item.stemsUrl);
+            if (stemsCopy && removable(stemsCopy) && !keptStems.has(stemsCopy.toLowerCase())) paths.push(stemsCopy);
+            const extrasCopy = clean(item && item.extrasUrl);
+            if (extrasCopy && removable(extrasCopy) && !keptExtras.has(extrasCopy.toLowerCase())) paths.push(extrasCopy);
             paths.forEach(candidate => {
                 if (deleting.has(candidate)) return;
                 deleting.add(candidate);
@@ -253,6 +307,9 @@
                 price: clean(beat.price),
                 license: clean(beat.license),
                 paymentUrl: clean(beat.paymentUrl),
+                paymentUrls: checkoutLinks(beat.paymentUrls),
+                stemsUrl: clean(beat.stemsUrl),
+                extrasUrl: clean(beat.extrasUrl),
                 coverUrl: clean(beat.coverUrl),
                 audioUrl: clean(beat.audioUrl || beat.path),
                 tagged: beat.tagged === true,
@@ -271,10 +328,14 @@
         DEFAULT_ARTIST,
         DEFAULT_LICENSE,
         MAX_FILE_BYTES,
+        ZIP_EXTENSIONS,
+        CHECKOUT_PREFIX,
         ext,
         baseName,
         isAudio,
         isImage,
+        isZip,
+        checkoutLinks,
         clean,
         slugify,
         safeSegment,
