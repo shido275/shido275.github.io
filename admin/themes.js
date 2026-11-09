@@ -197,7 +197,7 @@
     "use strict";
     const here = document.currentScript;
     const anchor = here && here.nextSibling;
-    const tools = ["live.js", "background-core.js", "backgrounds.js", "beat-core.js", "beats.js", "visualizer.js", "profile.js", "commit-fix.js"];
+    const tools = ["live.js", "background-core.js", "backgrounds.js", "stripe-core.js", "beat-core.js", "beats.js", "visualizer.js", "profile.js", "commit-fix.js"];
 
     tools.forEach(src => {
         const script = document.createElement("script");

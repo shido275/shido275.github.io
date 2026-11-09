@@ -193,6 +193,9 @@ function scanBeats() {
             price: metadata.price || '',
             license: metadata.license || '',
             paymentUrl: metadata.paymentUrl || '',
+            paymentUrls: metadata.paymentUrls || {},
+            stemsUrl: metadata.stemsUrl || '',
+            extrasUrl: metadata.extrasUrl || '',
             coverUrl: relCoverPath,
             audioUrl: relAudioPath,
             path: relAudioPath
