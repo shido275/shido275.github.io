@@ -1,0 +1,35 @@
+{
+  "updated": "2026-11-10",
+  "projects": [
+    {
+      "id": "theme-system",
+      "title": "Theme System",
+      "blurb": "Six complete looks driven by one JSON file, each owning its own layout, type and motion: Auckland 2077, Neon Terminal, Skux Deluxe, Krazy Kunt and the two quiet ones.",
+      "tags": ["CSS", "Design", "Front-end"],
+      "link": "index.html?theme=krazy-kunt",
+      "linkLabel": "See Krazy Kunt",
+      "updated": "2026-11-10",
+      "archived": false
+    },
+    {
+      "id": "website",
+      "title": "X/i\\D Website",
+      "blurb": "The storefront itself: hash-routed views, the persistent player and queue, cycled backdrops, the EPK and the beat store. Plain files, no build step, no framework.",
+      "tags": ["Web", "Front-end", "Static site"],
+      "link": "index.html#/home",
+      "linkLabel": "Open site",
+      "updated": "2026-11-06",
+      "archived": false
+    },
+    {
+      "id": "dashboard",
+      "title": "Admin Dashboard",
+      "blurb": "A GitHub-backed console for the whole site: uploads releases, beats and photos, edits links and credits, and writes the manifests the pages read. Publishes straight to the branch.",
+      "tags": ["Tooling", "GitHub API"],
+      "link": "admin/",
+      "linkLabel": "Open dashboard",
+      "updated": "2026-11-06",
+      "archived": false
+    }
+  ]
+}

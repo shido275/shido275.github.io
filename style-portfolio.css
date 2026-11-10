@@ -1,0 +1,228 @@
+/* ==========================================================================
+   Portfolio - data-driven project cards on #/portfolio.
+
+   Everything here reads the palette tokens (--line, --muted, --blood,
+   --surface-2) instead of hard-coded colours, so the cards follow whichever
+   theme is active, the same way releases and beats do.
+   ========================================================================== */
+
+.portfolio-head {
+    max-width: 68ch;
+    margin-bottom: 1.5rem;
+}
+
+.portfolio-head .panel-label {
+    margin-bottom: 0.9rem;
+}
+
+.portfolio-head h2 {
+    margin: 0 0 0.5rem;
+    font-family: var(--heading);
+    font-size: clamp(1.7rem, 4vw, 2.6rem);
+    font-weight: 400;
+    line-height: 1.05;
+    text-transform: uppercase;
+    color: var(--text);
+}
+
+.portfolio-head p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.95rem;
+    line-height: 1.7;
+}
+
+/* Filters ------------------------------------------------------------------ */
+
+.portfolio-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1.4rem;
+}
+
+.portfolio-toolbar .button {
+    min-height: 2.4rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.45rem 0.85rem;
+    font-size: 0.7rem;
+    letter-spacing: 0.12em;
+}
+
+.portfolio-toolbar .count {
+    font-family: var(--mono);
+    font-size: 0.72em;
+    letter-spacing: 0.06em;
+    opacity: 0.7;
+}
+
+/* Cards -------------------------------------------------------------------- */
+
+.project-card {
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+}
+
+.project-card img {
+    border-bottom: 1px solid var(--line);
+}
+
+.project-body {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    gap: 0.6rem;
+    padding: 1.1rem 1.2rem 1.25rem;
+}
+
+.project-headline {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.6rem;
+}
+
+.project-headline h2 {
+    margin: 0;
+    font-family: var(--heading);
+    font-size: 1.15rem;
+    font-weight: 400;
+    line-height: 1.15;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: var(--text);
+}
+
+.project-blurb {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.9rem;
+    line-height: 1.6;
+}
+
+.project-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.project-tags li {
+    padding: 0.2rem 0.45rem;
+    border: 1px solid var(--line);
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 0.58rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+}
+
+.project-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-top: auto;
+    padding-top: 0.7rem;
+    border-top: 1px solid var(--line);
+}
+
+.project-age {
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+.project-link {
+    flex: 0 0 auto;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    text-decoration: none;
+    border-bottom: 1px solid var(--line-active);
+    padding-bottom: 2px;
+    transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.project-link:hover,
+.project-link:focus-visible {
+    color: var(--blood);
+    border-color: var(--blood);
+}
+
+/* Status stamp ------------------------------------------------------------- */
+
+/* No fill: a paper theme redefines --text to ink, so a dark badge would
+   swallow its own label. Border and text alone read on paper and on black. */
+.status-badge {
+    flex: 0 0 auto;
+    padding: 0.26rem 0.45rem;
+    border: 1px solid var(--line-active);
+    background: transparent;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 0.56rem;
+    letter-spacing: 0.16em;
+    line-height: 1;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.status-badge.is-archived {
+    border-color: var(--blood);
+    background: transparent;
+    color: var(--blood);
+}
+
+/* An archived project is still readable, just visibly put away. */
+.project-card[data-archived="true"] {
+    opacity: 0.72;
+}
+
+.project-card[data-archived="true"] img {
+    filter: grayscale(1) contrast(0.9) brightness(0.85);
+}
+
+.project-card[data-archived="true"]:hover {
+    opacity: 1;
+}
+
+.portfolio-empty {
+    grid-column: 1 / -1;
+    margin: 0;
+    padding: 1.2rem 0;
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+.portfolio-status {
+    margin: 1.1rem 0 0;
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+}
+
+@media (max-width: 560px) {
+    .project-foot {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+
+    .portfolio-toolbar .button {
+        flex: 1 1 auto;
+        justify-content: center;
+    }
+}
