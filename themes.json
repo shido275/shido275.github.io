@@ -134,6 +134,33 @@
         "--brand-glow": "rgba(255, 43, 209, 0.55)",
         "--header-line": "rgba(255, 43, 209, 0.35)"
       }
+    },
+    {
+      "id": "krazy-kunt",
+      "label": "Krazy Kunt",
+      "era": "Punk / DIY flyer",
+      "css": "theme-krazy-kunt.css",
+      "note": "A photocopied hardcore flyer: bone paper taped onto toner black, ransom-note display type, hazard tape, halftone dots and print that missed its registration. Nascar Aloe energy - loud, scruffy and rude. This sheet owns the layout, the type and the tape; these colours are the ink.",
+      "vars": {
+        "--bg": "#0b0a08",
+        "--bg-2": "#12100c",
+        "--surface": "rgba(16, 14, 11, 0.86)",
+        "--surface-2": "rgba(22, 19, 14, 0.92)",
+        "--text": "#efe9dc",
+        "--muted": "#9b9384",
+        "--line": "rgba(239, 233, 220, 0.16)",
+        "--line-active": "rgba(230, 255, 0, 0.55)",
+        "--blood": "#ff3d00",
+        "--blood-soft": "rgba(255, 61, 0, 0.30)",
+        "--cyan": "#e6ff00",
+        "--gold": "#ff8a00",
+        "--rose": "#ff2d55",
+        "--green": "#9dff00",
+        "--shadow": "6px 6px 0 rgba(0, 0, 0, 0.85)",
+        "--shadow-neon": "0 0 0 2px #0b0a08, 5px 5px 0 #ff3d00",
+        "--brand-glow": "rgba(230, 255, 0, 0.45)",
+        "--header-line": "rgba(230, 255, 0, 0.35)"
+      }
     }
   ]
 }

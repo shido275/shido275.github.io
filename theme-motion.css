@@ -181,6 +181,41 @@ html[data-theme="skux-deluxe"] .xid-motion__b {
     50% { opacity: 0.9; }
 }
 
+/* -------------------------------------------------------------- krazy kunt */
+
+/* A flyer on a photocopier: the platen slides a few millimetres under a screen
+   of scanlines, and the exposure drops out for a frame now and then like a
+   tired lamp. Both layers move with transform and opacity only. */
+html[data-theme="krazy-kunt"] .xid-motion__a {
+    inset: -14% -6%;
+    opacity: 1;
+    background: repeating-linear-gradient(
+        to bottom,
+        rgba(239, 233, 220, 0.055) 0 1px,
+        transparent 1px 6px
+    );
+    animation: kkPlaten 11s linear infinite alternate;
+}
+
+@keyframes kkPlaten {
+    0% { transform: translate3d(0, -1.4%, 0); }
+    100% { transform: translate3d(0, 1.4%, 0); }
+}
+
+html[data-theme="krazy-kunt"] .xid-motion__b {
+    background:
+        radial-gradient(58% 44% at 50% -2%, rgba(255, 61, 0, 0.26), transparent 70%),
+        radial-gradient(46% 38% at 92% 88%, rgba(230, 255, 0, 0.10), transparent 72%);
+    animation: kkExposure 7.5s steps(1, end) infinite;
+}
+
+@keyframes kkExposure {
+    0%, 86%, 100% { opacity: 0.6; }
+    88% { opacity: 0.95; }
+    90% { opacity: 0.35; }
+    93% { opacity: 0.8; }
+}
+
 /* -------------------------------------------------------------- still looks */
 
 /* Someone who asked their system for less movement still gets every colour,
