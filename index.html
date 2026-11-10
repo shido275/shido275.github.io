@@ -10,6 +10,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="style-licenses.css">
+    <link rel="stylesheet" href="style-portfolio.css">
 </head>
 
 <body>
@@ -451,7 +452,6 @@
                             <select name="tier">
                                 <option>Exclusive on a catalogue beat</option>
                                 <option>Custom exclusive produced to brief</option>
-                                <option>Upgrade from a lease I already hold</option>
                                 <option>Not sure yet, advise me</option>
                             </select>
                         </label>
@@ -480,33 +480,30 @@
         <section id="view-portfolio" class="view-section">
             <section class="hero compact section-band">
                 <div class="hero-copy">
-                    <p class="eyebrow">Selected work</p>
+                    <p class="eyebrow">Everything else</p>
                     <h1>Portfolio</h1>
-                    <p class="lead">A place for releases, production credits, visual direction, cover art, live work, and collaboration case studies.</p>
+                    <p class="lead">The work that isn't a song: sites, tools, visuals and the odd experiment. Music lives in the player, the EPK and the beat store, so this page keeps the builds apart from the catalogue.</p>
                 </div>
             </section>
 
             <section class="section-band">
-                <div class="portfolio-grid">
-                    <article class="project-card">
-                        <img src="assets/project-1.svg" alt="Project artwork placeholder">
-                        <h2>Release Campaign</h2>
-                        <p>Detailed campaign strategies, sound design, marketing structures, and performance metrics for the debut launch of "Curse" campaign.</p>
-                        <a href="#">View Project</a>
-                    </article>
-                    <article class="project-card">
-                        <img src="assets/project-2.svg" alt="Project artwork placeholder">
-                        <h2>Production Credit</h2>
-                        <p>Showcase beats, audio engineering, mixing, mastering, and collaborative projects for local artists in the Auckland community.</p>
-                        <a href="#">View Credit</a>
-                    </article>
-                    <article class="project-card">
-                        <img src="assets/project-3.svg" alt="Project artwork placeholder">
-                        <h2>Visual Direction</h2>
-                        <p>Branding typography, promotional renders, live visual backdrop loops, photoshoots, and complete web development work.</p>
-                        <a href="#">View Visuals</a>
-                    </article>
+                <div class="portfolio-head">
+                    <p class="panel-label">On the bench</p>
+                    <h2>Projects</h2>
+                    <p>Every card shows when the project was last touched and whether it is still active or put away. The list comes from <code>portfolio.json</code>, newest active work first.</p>
                 </div>
+
+                <div class="portfolio-toolbar" role="group" aria-label="Filter projects">
+                    <button class="button primary" type="button" data-portfolio-filter="all" aria-pressed="true">All <span class="count" data-portfolio-count="all">&ndash;</span></button>
+                    <button class="button" type="button" data-portfolio-filter="active" aria-pressed="false">Active <span class="count" data-portfolio-count="active">&ndash;</span></button>
+                    <button class="button" type="button" data-portfolio-filter="archived" aria-pressed="false">Archived <span class="count" data-portfolio-count="archived">&ndash;</span></button>
+                </div>
+
+                <div class="portfolio-grid" id="portfolio-grid">
+                    <p class="muted portfolio-empty">Loading projects&hellip;</p>
+                </div>
+
+                <p class="portfolio-status muted" id="portfolio-status" role="status" aria-live="polite"></p>
             </section>
         </section>
     </main>
@@ -616,6 +613,8 @@
     <script src="epk-media.js"></script>
     <script src="site.js"></script>
     <script src="commission.js"></script>
+    <script src="portfolio-core.js"></script>
+    <script src="portfolio.js"></script>
 </body>
 
 </html>
