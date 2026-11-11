@@ -148,6 +148,105 @@ test("tags are trimmed, capped and safe when missing", () => {
     assert.deepEqual(Core.normalise([{ title: "Untagged" }], NOW)[0].tags, []);
 });
 
+/* ----------------------------------------------------------- GitHub repos */
+
+const REPOS = [
+    {
+        name: "XSTNSIONS",
+        full_name: "shido275/XSTNSIONS",
+        html_url: "https://github.com/shido275/XSTNSIONS",
+        description: "A modular native instrument.",
+        language: "C++",
+        topics: ["audio", "plugin"],
+        pushed_at: "2026-11-08T12:00:00Z",
+        archived: false,
+        fork: false
+    },
+    {
+        name: "Old Thing",
+        full_name: "shido275/old-thing",
+        html_url: "https://github.com/shido275/old-thing",
+        description: null,
+        language: null,
+        topics: [],
+        pushed_at: "2025-02-01T00:00:00Z",
+        archived: true
+    },
+    {
+        name: "Forked Lib",
+        full_name: "shido275/forked-lib",
+        html_url: "https://github.com/shido275/forked-lib",
+        pushed_at: "2026-11-01T00:00:00Z",
+        fork: true
+    }
+];
+
+test("a repository becomes a card with its push date, language and topics", () => {
+    const card = Core.repoProjects({}, REPOS, NOW).find(project => project.title === "XSTNSIONS");
+    assert.equal(card.blurb, "A modular native instrument.");
+    assert.equal(card.link, "https://github.com/shido275/XSTNSIONS");
+    assert.equal(card.linkLabel, "Open on GitHub");
+    assert.equal(card.updated, "2026-11-08T12:00:00Z");
+    assert.equal(card.age, "2 days ago");
+    assert.equal(card.archived, false);
+    assert.deepEqual(card.tags, ["C++", "audio", "plugin"]);
+});
+
+test("GitHub's archived flag is the stamp, and archived sits below active", () => {
+    const list = Core.repoProjects({}, REPOS, NOW);
+    assert.deepEqual(list.map(project => project.title), ["XSTNSIONS", "Old Thing"]);
+    assert.equal(list[1].archived, true);
+    assert.equal(list[1].blurb, "");
+    assert.deepEqual(list[1].tags, []);
+});
+
+test("forks stay off the page unless the data file opts in", () => {
+    const names = list => list.map(project => project.title);
+    assert.equal(names(Core.repoProjects({}, REPOS, NOW)).includes("Forked Lib"), false);
+    assert.equal(names(Core.repoProjects({ source: { includeForks: true } }, REPOS, NOW)).includes("Forked Lib"), true);
+});
+
+test("exclude matches the bare name or owner/name, in any case", () => {
+    const byName = Core.repoProjects({ source: { exclude: ["xstnsions"] } }, REPOS, NOW);
+    assert.equal(byName.some(project => project.title === "XSTNSIONS"), false);
+    const byFullName = Core.repoProjects({ source: { exclude: ["SHIDO275/OLD-THING"] } }, REPOS, NOW);
+    assert.equal(byFullName.some(project => project.title === "Old Thing"), false);
+    assert.equal(byFullName.length, 1);
+});
+
+test("private, duplicate and nameless repositories never reach the page", () => {
+    const list = Core.repoProjects({}, [
+        { name: "Public", full_name: "shido275/public", pushed_at: "2026-11-09" },
+        { name: "Secret", full_name: "shido275/secret", private: true, pushed_at: "2026-11-09" },
+        { name: "Public", full_name: "shido275/public", pushed_at: "2026-11-09" },
+        { full_name: "shido275/no-name", pushed_at: "2026-11-09" },
+        null
+    ], NOW);
+    assert.equal(list.length, 1);
+    assert.equal(list[0].title, "Public");
+});
+
+test("the api url names the account and asks for the biggest page", () => {
+    assert.equal(Core.apiUrl({ source: { user: "shido275" } }),
+        "https://api.github.com/users/shido275/repos?per_page=100&sort=pushed&direction=desc&type=owner");
+    assert.equal(Core.apiUrl({}), "");
+    assert.equal(Core.apiUrl(null), "");
+});
+
+test("a saved list is only trusted inside its window", () => {
+    const fiveMinutes = NOW.getTime() - 5 * 60000;
+    assert.equal(Core.isFresh(fiveMinutes, 10 * 60000, NOW), true);
+    assert.equal(Core.isFresh(fiveMinutes, 2 * 60000, NOW), false);
+    assert.equal(Core.isFresh(NOW.getTime() + 60000, 10 * 60000, NOW), false);
+    assert.equal(Core.isFresh("nope", 10 * 60000, NOW), false);
+    assert.equal(Core.isFresh(0, 10 * 60000, NOW), false);
+});
+
+test("a payload that is not a list is simply empty", () => {
+    assert.deepEqual(Core.repoProjects({}, null, NOW), []);
+    assert.deepEqual(Core.repoProjects({}, { message: "rate limited" }, NOW), []);
+});
+
 /* ----------------------------------------------------------------- report */
 
 if (failures.length) {

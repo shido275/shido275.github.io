@@ -1,12 +1,16 @@
 /* ==========================================================================
    portfolio-core.js - the arithmetic behind the portfolio, kept out of the DOM.
 
-   portfolio.json lists the projects that are not music. Each one carries the
-   day it was last touched and whether it has been put away, so the page can say
-   "Updated 4 days ago" and stamp an Active or Archived badge on the card.
+   The cards are my public GitHub repositories, read live. GitHub already
+   answers both questions the page asks: pushed_at is when the repository was
+   last touched, and archived is GitHub's own flag, so there is no second list
+   to keep in step. portfolio.json holds the account to read, any repos to
+   leave out, and a snapshot to fall back on when api.github.com cannot be
+   reached or its anonymous hourly limit is spent.
 
-   Nothing here touches the document, so the date maths, the ordering and the
-   filters can be tested with plain node (see admin/portfolio-core.test.js).
+   This file turns that payload into the same card shape the snapshot uses, so
+   the renderer has one path and the date maths, the ordering and the filters
+   can be tested with plain node (see admin/portfolio-core.test.js).
    ========================================================================== */
 (function () {
     "use strict";
@@ -120,7 +124,123 @@
         return items.slice();
     }
 
-    const Core = { DAY, parseDay, daysSince, timeAgo, normalise, counts, filter };
+    /* ------------------------------------------------------- GitHub payloads */
+
+    /* Every public repository, newest push first: one page is a hundred, which
+       is the API's maximum and more than this account has. */
+    function apiUrl(doc) {
+        const source = (doc && doc.source) || {};
+        const user = String(source.user || "").trim();
+        if (!user) return "";
+        return `https://api.github.com/users/${encodeURIComponent(user)}/repos`
+            + "?per_page=100&sort=pushed&direction=desc&type=owner";
+    }
+
+    /* A cache written in a previous visit is only worth painting while it is
+       inside the window: GitHub allows sixty anonymous calls an hour. A clock
+       that has jumped backwards is not trusted either. */
+    function isFresh(savedAt, ttl, now) {
+        const at = Number(savedAt);
+        const life = Number(ttl);
+        if (!Number.isFinite(at) || at <= 0) return false;
+        if (!Number.isFinite(life) || life <= 0) return false;
+        const stamp = now instanceof Date ? now.getTime() : Number.isFinite(now) ? now : Date.now();
+        const age = stamp - at;
+        return age >= 0 && age < life;
+    }
+
+    function repoKey(repo) {
+        const full = String((repo && repo.full_name) || "").trim();
+        if (full) return full;
+        const name = String((repo && repo.name) || "").trim();
+        const owner = String((repo && repo.owner && repo.owner.login) || "").trim();
+        return owner && name ? `${owner}/${name}` : name;
+    }
+
+    /* GitHub timestamps: pushed_at is the real "last touched", but a fresh repo
+       with no push yet only carries the other two. */
+    function repoDay(repo) {
+        const value = repo && (repo.pushed_at || repo.updated_at || repo.created_at);
+        return String(value == null ? "" : value).trim();
+    }
+
+    /* Language first, then the repository's own topics: the useful signal on a
+       card is what it is built with, not a star count. */
+    function repoTags(repo) {
+        const language = String((repo && repo.language) || "").trim();
+        const topics = repo && Array.isArray(repo.topics) ? repo.topics : [];
+        return tagsOf([language].concat(topics));
+    }
+
+    function repoProject(repo) {
+        return {
+            id: repoKey(repo),
+            title: String((repo && repo.name) || "").trim(),
+            blurb: String((repo && repo.description) || "").trim(),
+            tags: repoTags(repo),
+            link: String((repo && repo.html_url) || "").trim(),
+            linkLabel: "Open on GitHub",
+            updated: repoDay(repo),
+            archived: repo && repo.archived === true
+        };
+    }
+
+    function namesOf(value) {
+        if (!Array.isArray(value)) return [];
+        return value
+            .map(item => String(item == null ? "" : item).trim().toLowerCase())
+            .filter(Boolean);
+    }
+
+    /* A fork is somebody else's project, so it stays off the page unless the
+       data file opts in. A private repository should never arrive here, but it
+       is dropped rather than trusted. */
+    function fromRepos(doc, payload) {
+        const source = (doc && doc.source) || {};
+        const skip = namesOf(source.exclude);
+        const includeForks = source.includeForks === true;
+        const list = Array.isArray(payload) ? payload : [];
+        const seen = new Set();
+        const out = [];
+
+        list.forEach(repo => {
+            if (!repo || typeof repo !== "object") return;
+            if (repo.fork === true && !includeForks) return;
+            if (repo.private === true) return;
+
+            const key = repoKey(repo);
+            if (!key) return;
+            const name = String(repo.name || "").trim().toLowerCase();
+            const lower = key.toLowerCase();
+            if (skip.indexOf(lower) !== -1) return;
+            if (name && skip.indexOf(name) !== -1) return;
+            if (seen.has(lower)) return;
+            seen.add(lower);
+
+            if (!String(repo.name || "").trim()) return;
+            out.push(repoProject(repo));
+        });
+
+        return out;
+    }
+
+    function repoProjects(doc, payload, now) {
+        return normalise({ projects: fromRepos(doc, payload) }, now);
+    }
+
+    const Core = {
+        DAY,
+        parseDay,
+        daysSince,
+        timeAgo,
+        normalise,
+        counts,
+        filter,
+        apiUrl,
+        isFresh,
+        fromRepos,
+        repoProjects
+    };
 
     if (typeof window !== "undefined") window.PortfolioCore = Core;
     if (typeof module !== "undefined" && module.exports) module.exports = Core;

@@ -1,35 +1,27 @@
 {
-  "updated": "2026-11-10",
+  "updated": "2026-11-11",
+  "source": {
+    "provider": "github",
+    "user": "shido275",
+    "exclude": [],
+    "includeForks": false,
+    "cacheMinutes": 10
+  },
   "projects": [
-    {
-      "id": "theme-system",
-      "title": "Theme System",
-      "blurb": "Six complete looks driven by one JSON file, each owning its own layout, type and motion: Auckland 2077, Neon Terminal, Skux Deluxe, Krazy Kunt and the two quiet ones.",
-      "tags": ["CSS", "Design", "Front-end"],
-      "link": "index.html?theme=krazy-kunt",
-      "linkLabel": "See Krazy Kunt",
-      "updated": "2026-11-10",
-      "archived": false
-    },
-    {
-      "id": "website",
-      "title": "X/i\\D Website",
-      "blurb": "The storefront itself: hash-routed views, the persistent player and queue, cycled backdrops, the EPK and the beat store. Plain files, no build step, no framework.",
-      "tags": ["Web", "Front-end", "Static site"],
-      "link": "index.html#/home",
-      "linkLabel": "Open site",
-      "updated": "2026-11-06",
-      "archived": false
-    },
-    {
-      "id": "dashboard",
-      "title": "Admin Dashboard",
-      "blurb": "A GitHub-backed console for the whole site: uploads releases, beats and photos, edits links and credits, and writes the manifests the pages read. Publishes straight to the branch.",
-      "tags": ["Tooling", "GitHub API"],
-      "link": "admin/",
-      "linkLabel": "Open dashboard",
-      "updated": "2026-11-06",
-      "archived": false
-    }
+    { "id": "shido275/shido275.github.io", "title": "shido275.github.io", "blurb": "", "tags": ["JavaScript"], "link": "https://github.com/shido275/shido275.github.io", "linkLabel": "Open on GitHub", "updated": "2026-11-10T14:46:51Z", "archived": false },
+    { "id": "shido275/DaMarketplace", "title": "DaMarketplace", "blurb": "", "tags": ["JavaScript"], "link": "https://github.com/shido275/DaMarketplace", "linkLabel": "Open on GitHub", "updated": "2026-11-10T12:37:58Z", "archived": false },
+    { "id": "shido275/ShidoOSINT", "title": "ShidoOSINT", "blurb": "OSINT Developed by X/i\\D", "tags": [], "link": "https://github.com/shido275/ShidoOSINT", "linkLabel": "Open on GitHub", "updated": "2026-11-05T05:31:06Z", "archived": false },
+    { "id": "shido275/XSTNSIONS", "title": "XSTNSIONS", "blurb": "A modular native instrument and effect audio plug-in with a local extension library.", "tags": ["C++"], "link": "https://github.com/shido275/XSTNSIONS", "linkLabel": "Open on GitHub", "updated": "2026-10-25T20:58:04Z", "archived": false },
+    { "id": "shido275/Cinema", "title": "Cinema", "blurb": "", "tags": ["HTML"], "link": "https://github.com/shido275/Cinema", "linkLabel": "Open on GitHub", "updated": "2026-08-28T23:35:22Z", "archived": false },
+    { "id": "shido275/switching-game", "title": "switching-game", "blurb": "", "tags": ["CSS"], "link": "https://github.com/shido275/switching-game", "linkLabel": "Open on GitHub", "updated": "2026-08-28T22:38:59Z", "archived": false },
+    { "id": "shido275/Aternos-aliver", "title": "Aternos-aliver", "blurb": "", "tags": [], "link": "https://github.com/shido275/Aternos-aliver", "linkLabel": "Open on GitHub", "updated": "2026-08-25T09:58:55Z", "archived": false },
+    { "id": "shido275/Tamper-block", "title": "Tamper-block", "blurb": "", "tags": ["TypeScript"], "link": "https://github.com/shido275/Tamper-block", "linkLabel": "Open on GitHub", "updated": "2026-08-01T23:02:45Z", "archived": false },
+    { "id": "shido275/Lokkeroo", "title": "Lokkeroo", "blurb": "", "tags": ["Python"], "link": "https://github.com/shido275/Lokkeroo", "linkLabel": "Open on GitHub", "updated": "2026-07-27T19:19:42Z", "archived": false },
+    { "id": "shido275/cam-overlay", "title": "cam-overlay", "blurb": "", "tags": ["CSS"], "link": "https://github.com/shido275/cam-overlay", "linkLabel": "Open on GitHub", "updated": "2026-07-17T23:25:23Z", "archived": false },
+    { "id": "shido275/starting-soon", "title": "starting-soon", "blurb": "", "tags": ["CSS"], "link": "https://github.com/shido275/starting-soon", "linkLabel": "Open on GitHub", "updated": "2026-07-17T18:41:05Z", "archived": false },
+    { "id": "shido275/be-right-back", "title": "be-right-back", "blurb": "", "tags": ["CSS"], "link": "https://github.com/shido275/be-right-back", "linkLabel": "Open on GitHub", "updated": "2026-07-17T18:15:08Z", "archived": false },
+    { "id": "shido275/the-g00j-archive", "title": "the-g00j-archive", "blurb": "", "tags": ["JavaScript"], "link": "https://github.com/shido275/the-g00j-archive", "linkLabel": "Open on GitHub", "updated": "2026-07-16T01:23:01Z", "archived": false },
+    { "id": "shido275/SymLinkr", "title": "SymLinkr", "blurb": "", "tags": ["Dart"], "link": "https://github.com/shido275/SymLinkr", "linkLabel": "Open on GitHub", "updated": "2026-07-16T00:30:30Z", "archived": false },
+    { "id": "shido275/shido.github.io", "title": "shido.github.io", "blurb": "", "tags": ["JavaScript"], "link": "https://github.com/shido275/shido.github.io", "linkLabel": "Open on GitHub", "updated": "2026-06-13T04:42:28Z", "archived": true }
   ]
 }
