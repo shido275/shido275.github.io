@@ -1,0 +1,9 @@
+{
+    "$schema": "https://raw.githubusercontent.com/cloudflare/workerd/main/worker-configuration.d.ts",
+    "name": "rumble-live-endpoint",
+    "main": "src/index.js",
+    "compatibility_date": "2026-11-01",
+    "observability": {
+        "enabled": true
+    }
+}
