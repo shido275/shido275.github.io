@@ -1,0 +1,61 @@
+# Publishes the site without the audio library.
+#
+# Why: with Pages set to publish the branch root, every deploy shipped the whole
+# Music/ folder (~967 MB) and the deploy step hit the ten-minute limit
+# (run 42837565008: "Deploy to GitHub Pages" started 14:48:27 and failed at
+# 14:58:53). The site never loads audio from Pages anyway: site.js reads the
+# catalogue through the GitHub API and plays the files from
+# raw.githubusercontent.com, and feed.js rewrites Pages audio URLs to the raw
+# host too. So the audio stays in the repo and is simply left out of the
+# artifact, which drops the published site to roughly 9 MB.
+#
+# music-manifest.json is the one file that pointed at Pages for audio: it is the
+# fallback used when the GitHub API is rate limited. It is rewritten to raw URLs
+# while staging, so the fallback keeps working with the audio unpublished.
+
+name: Deploy site
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deploy at a time: the Rumble poller commits live.json every few minutes,
+# and a queued deploy should finish rather than be cancelled mid-publish.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Stage the site without the audio library
+        run: |
+          set -eu
+          mkdir -p _site
+          rsync -a --exclude '.git' --exclude 'Music' --exclude '_site' ./ _site/
+          touch _site/.nojekyll
+          du -sh _site
+
+      - name: Point the fallback manifest at raw GitHub URLs
+        run: node scripts/pages-manifest.js _site/music-manifest.json
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - id: deployment
+        uses: actions/deploy-pages@v4
