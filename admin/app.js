@@ -10,7 +10,11 @@
     "use strict";
 
     const CORE = window.ReleaseImport;
+    const Release = window.ReleaseCore;
     const CONFIG_KEY = "xid.admin.config.v2";
+    /* The same key the Beat Store saves, so one saved Stripe key serves both. */
+    const STRIPE_KEY_STORE = "xid.admin.stripe.v1";
+    const STRIPE_LINKS = "https://api.stripe.com/v1/payment_links";
     const API = "https://api.github.com";
     const $ = id => document.getElementById(id);
 
@@ -22,7 +26,8 @@
         plan: null,
         busy: false,
         view: "overview",
-        connected: false
+        connected: false,
+        trackPaymentUrls: {}
     };
 
     const viewHooks = {};
@@ -414,6 +419,25 @@
         state.files.forEach((row, index) => {
             row.trackNumber = next + index;
         });
+
+        /* Carry the release's existing delivery settings back into the form, so
+           re-publishing a release does not silently reset it to stream only. */
+        if (Release) {
+            state.trackPaymentUrls = {};
+            match.tracks.forEach(track => {
+                if (track.trackPaymentUrl && track.trackNumber) {
+                    state.trackPaymentUrls[`track-${track.trackNumber}`] = track.trackPaymentUrl;
+                }
+            });
+            $("form-distribution").value = Release.normalizeMode(first.distribution);
+            if (first.price) {
+                $("form-price").value = (Number(first.price) / 100).toFixed(2);
+                $("form-price").dataset.touched = "true";
+            }
+            $("form-payment-url").value = first.paymentUrl || "";
+            $("form-access").value = first.access || "";
+            syncDistributionUi();
+        }
         renderTracks();
         log(`Filling into existing release "${match.release}" from track ${next}.`);
     }
@@ -496,6 +520,10 @@
             label: $("form-label").value.trim(),
             genre: $("form-genre").value.trim(),
             explicit: $("form-explicit").checked,
+            distribution: distributionValue(),
+            price: $("form-price").value,
+            paymentUrl: $("form-payment-url").value.trim(),
+            access: $("form-access").value.trim(),
             titles: Object.fromEntries(state.files.map(row => [row.name, row.title])),
             trackNumbers: Object.fromEntries(state.files.map(row => [row.name, row.trackNumber]))
         };
@@ -506,7 +534,8 @@
             files: state.files.map(row => row.file),
             coverFile: state.coverFile,
             form: currentForm(),
-            existingManifest: state.manifest
+            existingManifest: state.manifest,
+            meta: releaseMeta()
         });
         state.plan = plan;
         renderPlan("plan-output", plan, [
@@ -656,6 +685,245 @@
         });
     }
 
+    /* ------------------------------------------------- release distribution */
+
+    function siteOrigin() {
+        return `${window.location.origin}/`;
+    }
+
+    function distributionValue() {
+        return Release ? Release.normalizeMode($("form-distribution").value) : "stream";
+    }
+
+    /* Price defaults come from the category, but stay editable: a release can be
+       priced by hand without touching the code. */
+    function syncDistributionUi() {
+        const mode = distributionValue();
+        const category = $("form-category").value;
+        const priceField = $("form-price");
+
+        if (Release && !priceField.dataset.touched) {
+            priceField.value = (Release.releasePrice(category) / 100).toFixed(2);
+        }
+        priceField.disabled = mode !== "paid";
+        $("form-payment-url").disabled = mode !== "paid";
+        $("form-access").disabled = mode !== "exclusive";
+        $("access-row").hidden = mode !== "exclusive";
+        $("extras-block").hidden = mode !== "exclusive";
+        $("distribution-note").textContent = Release ? Release.modeById(mode).note : "";
+
+        if (mode === "exclusive") {
+            if (Release && !Release.isAccessToken($("form-access").value)) {
+                $("form-access").value = Release.randomToken();
+            }
+            renderAccessLink();
+        } else {
+            $("access-link").value = "";
+        }
+
+        state.plan = null;
+        if ($("btn-import")) $("btn-import").disabled = true;
+    }
+
+    function renderAccessLink() {
+        if (!Release) return;
+        const token = $("form-access").value.trim();
+        $("access-link").value = Release.shareUrl(siteOrigin(), token);
+    }
+
+    /* "Label | https://link" per line, which is the least fiddly thing to type. */
+    function parseExtras(text) {
+        return String(text || "")
+            .split("\n")
+            .map(line => line.trim())
+            .filter(Boolean)
+            .map(line => {
+                const [label, ...rest] = line.split("|");
+                return { label: (label || "").trim(), url: rest.join("|").trim(), kind: "link" };
+            })
+            .filter(entry => entry.label && entry.url);
+    }
+
+    /* Everything the catalogue and info.json need about delivery, built once. */
+    function releaseMeta() {
+        if (!Release) return {};
+        const mode = distributionValue();
+        const meta = Release.metaFor({
+            distribution: mode,
+            category: $("form-category").value,
+            price: Math.round(Number($("form-price").value || 0) * 100),
+            paymentUrl: $("form-payment-url").value.trim(),
+            access: $("form-access").value.trim(),
+            trackPaymentUrls: state.trackPaymentUrls
+        });
+        if (mode === "exclusive") {
+            const extras = Release.normalizeExtras(parseExtras($("form-extras").value));
+            if (extras.length) meta.extras = extras;
+            if (meta.access) $("form-access").value = meta.access;
+        }
+        return meta;
+    }
+
+    /* ------------------------------------------------------- Stripe links */
+
+    function stripeKey() {
+        try {
+            return window.localStorage.getItem(STRIPE_KEY_STORE) || "";
+        } catch {
+            return "";
+        }
+    }
+
+    function stripeStatus(text, tone) {
+        const node = $("row-stripe-status");
+        if (!node) return;
+        node.textContent = text;
+        node.dataset.tone = tone || "";
+    }
+
+    function stripeKeyStatus() {
+        const key = stripeKey();
+        if (!key) return "No key saved - links cannot be created yet.";
+        if (!/^(rk|sk)_(live|test)_[A-Za-z0-9]{8,}$/.test(key)) return "Saved key does not look like a Stripe key.";
+        return /^[a-z]+_(live)_/.test(key) ? "Live key saved." : "Test key saved.";
+    }
+
+    async function stripeLink(product, release, redirect) {
+        const response = await fetch(STRIPE_LINKS, {
+            method: "POST",
+            headers: {
+                Authorization: `Bearer ${stripeKey()}`,
+                "Content-Type": "application/x-www-form-urlencoded"
+            },
+            body: Release.paymentLinkBody(product, release, redirect)
+        });
+        if (!response.ok) {
+            const detail = await response.text().catch(() => "");
+            throw new Error(`Stripe answered ${response.status}${detail ? ` - ${detail.slice(0, 160)}` : ""}`);
+        }
+        return Release.parsePaymentLink(await response.json());
+    }
+
+    async function createReleaseLinks() {
+        if (!Release) return 0;
+        if (distributionValue() !== "paid") {
+            stripeStatus("Pick Paid first - links are only for paid releases.", "warn");
+            return 0;
+        }
+        const key = stripeKey();
+        if (!/^(rk|sk)_(live|test)_[A-Za-z0-9]{8,}$/.test(key)) {
+            stripeStatus("Save a Stripe restricted key first.", "warn");
+            return 0;
+        }
+
+        const title = $("form-album").value.trim() || $("form-release").value.trim();
+        if (!title) {
+            stripeStatus("Name the release first.", "warn");
+            return 0;
+        }
+
+        const category = $("form-category").value;
+        const price = Math.round(Number($("form-price").value || 0) * 100) || Release.releasePrice(category);
+        const tracks = state.files.map((row, index) => ({ title: row.title, trackNumber: Number(row.trackNumber) || index + 1 }));
+        const release = { title, category, price };
+        const redirect = `${siteOrigin()}purchase.html?release=${encodeURIComponent(title)}&s={CHECKOUT_SESSION_ID}`;
+
+        setBusy(true);
+        let made = 0;
+        try {
+            const products = Release.productsFor(release, tracks);
+            for (const product of products) {
+                stripeStatus(`Creating ${product.name}…`, "warn");
+                try {
+                    const link = await stripeLink(product, release, redirect);
+                    if (product.kind === "release") {
+                        $("form-payment-url").value = link.url;
+                    } else {
+                        state.trackPaymentUrls[product.key] = link.url;
+                    }
+                    made += 1;
+                    log(`Stripe link for ${product.name}: ${link.url}`);
+                } catch (error) {
+                    log(`Stripe refused ${product.name}: ${error.message}`);
+                }
+            }
+            stripeStatus(made ? `${made} link(s) ready - publish to put them on the site.` : "No links were created.", made ? "ok" : "warn");
+            renderLinkOutput(products);
+            state.plan = null;
+            if ($("btn-import")) $("btn-import").disabled = true;
+        } finally {
+            setBusy(false);
+        }
+        return made;
+    }
+
+    function renderLinkOutput(products) {
+        const box = $("row-links-output");
+        if (!box) return;
+        const rows = (products || []).map(product => {
+            const url = product.kind === "release" ? $("form-payment-url").value.trim() : state.trackPaymentUrls[product.key] || "";
+            if (!url) return "";
+            return `<p class="muted">${escapeHtml(product.name)} · <a href="${escapeHtml(url)}" target="_blank" rel="noopener">${escapeHtml(url)}</a></p>`;
+        }).filter(Boolean);
+        box.innerHTML = rows.join("") || "";
+    }
+
+    function wireDelivery() {
+        if (!Release) {
+            log("release-core.js did not load - releases will publish as stream only.");
+            return;
+        }
+        $("form-distribution").innerHTML = Release.MODES
+            .map(mode => `<option value="${mode.id}">${escapeHtml(mode.label)}</option>`)
+            .join("");
+        $("form-distribution").value = Release.DEFAULT_MODE;
+
+        $("form-distribution").addEventListener("change", syncDistributionUi);
+        $("form-category").addEventListener("change", () => {
+            delete $("form-price").dataset.touched;
+            syncDistributionUi();
+        });
+        $("form-price").addEventListener("input", () => {
+            $("form-price").dataset.touched = "true";
+        });
+        $("form-access").addEventListener("input", renderAccessLink);
+        $("btn-access-token").addEventListener("click", () => {
+            $("form-access").value = Release.randomToken();
+            renderAccessLink();
+        });
+        $("access-link").addEventListener("focus", event => event.target.select());
+
+        $("form-stripe-key").value = stripeKey();
+        stripeStatus(stripeKeyStatus());
+        $("row-stripe-save").addEventListener("click", () => {
+            const value = $("form-stripe-key").value.trim();
+            if (!/^(rk|sk)_(live|test)_[A-Za-z0-9]{8,}$/.test(value)) {
+                stripeStatus("That does not look like a Stripe restricted key.", "warn");
+                return;
+            }
+            try {
+                window.localStorage.setItem(STRIPE_KEY_STORE, value);
+                stripeStatus(stripeKeyStatus(), "ok");
+                log("Stripe key saved in this browser.");
+            } catch {
+                stripeStatus("This browser refused to store the key.", "warn");
+            }
+        });
+        $("row-stripe-forget").addEventListener("click", () => {
+            try {
+                window.localStorage.removeItem(STRIPE_KEY_STORE);
+            } catch {
+                /* ignore */
+            }
+            $("form-stripe-key").value = "";
+            stripeStatus(stripeKeyStatus());
+            log("Stripe key forgotten.");
+        });
+        $("row-stripe-links").addEventListener("click", createReleaseLinks);
+
+        syncDistributionUi();
+    }
+
     function wireReleaseForm() {
         $("form-date").value = new Date().toISOString().slice(0, 10);
         $("form-category").innerHTML = CORE.CATEGORIES
@@ -663,6 +931,7 @@
             .join("");
         $("form-label").value = CORE.DEFAULT_LABEL;
         $("opt-branchname").value = CORE.suggestBranchName("release");
+        wireDelivery();
         renderTracks();
         wireTrackRows();
 
