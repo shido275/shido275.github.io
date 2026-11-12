@@ -1,0 +1,261 @@
+/* Krazy Kunt, part 4 of 5: the controls, artwork and players. Imported in order from
+   theme-krazy-kunt.css, which is the file themes.json points at. */
+
+/* --------------------------------------------------------------- buttons */
+
+html[data-theme="krazy-kunt"] .button,
+html[data-theme="krazy-kunt"] button.button,
+html[data-theme="krazy-kunt"] .tabs button,
+html[data-theme="krazy-kunt"] .bar-btn,
+html[data-theme="krazy-kunt"] .control-btn {
+    font-family: var(--kk-display);
+    font-size: 0.9rem;
+    font-weight: 400;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--kk-ink);
+    background: var(--kk-paper);
+    border: 2px solid var(--kk-ink);
+    border-radius: 0;
+    box-shadow: 4px 4px 0 var(--kk-ink);
+    text-shadow: none;
+    transform: none;
+    transition: background-color 0.1s linear, color 0.1s linear, transform 0.1s linear, box-shadow 0.1s linear;
+}
+
+html[data-theme="krazy-kunt"] .button:hover,
+html[data-theme="krazy-kunt"] button.button:hover,
+html[data-theme="krazy-kunt"] .tabs button:hover,
+html[data-theme="krazy-kunt"] .bar-btn:hover,
+html[data-theme="krazy-kunt"] .control-btn:hover {
+    color: var(--kk-ink);
+    background: var(--kk-yellow);
+    border-color: var(--kk-ink);
+    box-shadow: 6px 6px 0 var(--kk-ink);
+    transform: translate(-2px, -2px);
+}
+
+html[data-theme="krazy-kunt"] .button:active,
+html[data-theme="krazy-kunt"] .tabs button:active,
+html[data-theme="krazy-kunt"] .bar-btn:active,
+html[data-theme="krazy-kunt"] .control-btn:active {
+    transform: translate(1px, 1px);
+    box-shadow: 2px 2px 0 var(--kk-ink);
+}
+
+html[data-theme="krazy-kunt"] .button.primary,
+html[data-theme="krazy-kunt"] button.button.primary,
+html[data-theme="krazy-kunt"] .tabs button.active,
+html[data-theme="krazy-kunt"] .control-btn.active,
+html[data-theme="krazy-kunt"] .bar-btn.active {
+    color: var(--kk-ink);
+    background: var(--kk-yellow);
+    border-color: var(--kk-ink);
+    box-shadow: 4px 4px 0 var(--kk-ink);
+}
+
+/* The reverse print: yellow flips to solid black on hover. */
+html[data-theme="krazy-kunt"] .button.primary:hover,
+html[data-theme="krazy-kunt"] button.button.primary:hover,
+html[data-theme="krazy-kunt"] .tabs button.active:hover {
+    color: var(--kk-paper);
+    background: var(--kk-ink);
+    box-shadow: 6px 6px 0 var(--kk-ink);
+}
+
+/* A button printed on a clipping is a black stamp, not another sheet. */
+html[data-theme="krazy-kunt"] .release-card .button,
+html[data-theme="krazy-kunt"] .beat-card .button,
+html[data-theme="krazy-kunt"] .project-card .button,
+html[data-theme="krazy-kunt"] .hero-panel .button,
+html[data-theme="krazy-kunt"] .tier-card .button,
+html[data-theme="krazy-kunt"] .info-modal .button,
+html[data-theme="krazy-kunt"] .contact-card .button,
+html[data-theme="krazy-kunt"] .mega-link .button {
+    color: var(--kk-paper);
+    background: var(--kk-ink);
+    border-color: var(--kk-ink);
+    box-shadow: 3px 3px 0 var(--kk-yellow);
+}
+
+html[data-theme="krazy-kunt"] .release-card .button:hover,
+html[data-theme="krazy-kunt"] .beat-card .button:hover,
+html[data-theme="krazy-kunt"] .project-card .button:hover,
+html[data-theme="krazy-kunt"] .hero-panel .button:hover,
+html[data-theme="krazy-kunt"] .tier-card .button:hover,
+html[data-theme="krazy-kunt"] .info-modal .button:hover {
+    color: var(--kk-ink);
+    background: var(--kk-yellow);
+    border-color: var(--kk-ink);
+    box-shadow: 5px 5px 0 var(--kk-ink);
+}
+
+html[data-theme="krazy-kunt"] .music-folder summary {
+    min-height: 0;
+    font-family: var(--kk-display);
+    font-size: 1rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--kk-ink);
+    border: 0;
+    border-bottom: 2px dashed rgba(11, 11, 11, 0.4);
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    text-shadow: none;
+    transform: none;
+}
+
+html[data-theme="krazy-kunt"] .music-folder summary:hover { transform: none; box-shadow: none; }
+html[data-theme="krazy-kunt"] #music-tabs .button { font-size: 0.78rem; padding: 0.45rem 0.85rem; }
+
+html[data-theme="krazy-kunt"] .price,
+html[data-theme="krazy-kunt"] .tier-price,
+html[data-theme="krazy-kunt"] .stat-grid div span {
+    font-family: var(--kk-display);
+    color: var(--kk-ink);
+}
+
+/* The price is the one thing on a tier sheet that gets the marker. */
+html[data-theme="krazy-kunt"] .tier-price {
+    font-size: clamp(1.8rem, 3vw, 2.4rem);
+    letter-spacing: -0.01em;
+    background: linear-gradient(180deg, transparent 58%, var(--kk-yellow) 58%, var(--kk-yellow) 92%, transparent 92%);
+}
+
+/* -------------------------------------------------------------- artwork */
+
+/* Everything printed is a photocopy of a photocopy: grey, hard contrast. */
+html[data-theme="krazy-kunt"] .release-card img,
+html[data-theme="krazy-kunt"] .beat-card img,
+html[data-theme="krazy-kunt"] .project-card img,
+html[data-theme="krazy-kunt"] .qr-card img,
+html[data-theme="krazy-kunt"] .folder-art,
+html[data-theme="krazy-kunt"] .media-grid img {
+    border-bottom: 2px solid var(--kk-ink);
+    border-radius: 0;
+    filter: grayscale(1) contrast(1.45) brightness(1.02);
+}
+
+html[data-theme="krazy-kunt"] .profile-avatar {
+    border: 3px solid var(--kk-ink);
+    border-radius: 0;
+    box-shadow: 8px 8px 0 var(--kk-yellow), 8px 8px 0 10px var(--kk-ink);
+    filter: grayscale(1) contrast(1.3);
+    transform: rotate(-2deg);
+}
+
+html[data-theme="krazy-kunt"] #global-player-art {
+    border: 2px solid var(--kk-paper);
+    border-radius: 0;
+    filter: grayscale(1) contrast(1.35);
+}
+
+/* --------------------------------------------------------------- player */
+
+/* The player is the one solid block of toner at the foot of the page, so the
+   paper-coloured type tokens have to be restored inside it. */
+html[data-theme="krazy-kunt"] .player-bar {
+    --text: var(--kk-paper);
+    --muted: #b7b2a6;
+    --line: rgba(244, 242, 236, 0.26);
+    --line-active: rgba(244, 242, 236, 0.6);
+    --blood: var(--kk-yellow);
+
+    background: var(--kk-ink);
+    border-top: 5px solid var(--kk-yellow);
+    border-radius: 0;
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+
+html[data-theme="krazy-kunt"] #global-player-title {
+    font-family: var(--kk-display);
+    font-size: 1rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--kk-paper);
+    text-shadow: none;
+}
+
+html[data-theme="krazy-kunt"] #global-player-artist { color: var(--kk-yellow); }
+html[data-theme="krazy-kunt"] .player-bar .time-label { color: var(--kk-paper); font-variant-numeric: tabular-nums; }
+
+html[data-theme="krazy-kunt"] .player-bar .bar-btn {
+    color: var(--kk-paper);
+    background: transparent;
+    border-color: var(--kk-paper);
+    box-shadow: 3px 3px 0 rgba(244, 242, 236, 0.35);
+}
+
+html[data-theme="krazy-kunt"] .player-bar .bar-btn:hover {
+    color: var(--kk-ink);
+    background: var(--kk-yellow);
+    border-color: var(--kk-yellow);
+    box-shadow: 3px 3px 0 var(--kk-paper);
+}
+
+html[data-theme="krazy-kunt"] .progress-bar-wrapper,
+html[data-theme="krazy-kunt"] .volume-slider-wrapper {
+    background: rgba(244, 242, 236, 0.14);
+    border: 1px solid var(--kk-paper);
+    border-radius: 0;
+    overflow: hidden;
+}
+
+html[data-theme="krazy-kunt"] .progress-bar-fill,
+html[data-theme="krazy-kunt"] .volume-fill {
+    height: 100%;
+    border-radius: 0;
+    background: var(--kk-yellow);
+    box-shadow: none;
+}
+
+html[data-theme="krazy-kunt"] .primary-play {
+    border-color: var(--kk-yellow);
+    color: var(--kk-yellow);
+    letter-spacing: 0.1em;
+}
+
+html[data-theme="krazy-kunt"] .visualizer-wrapper {
+    background: var(--kk-ink);
+    border: 2px solid var(--kk-paper);
+    border-radius: 0;
+    box-shadow: 0 -6px 0 var(--kk-yellow);
+}
+
+html[data-theme="krazy-kunt"] #global-visualizer-canvas { filter: grayscale(1) contrast(1.5); }
+
+/* --------------------------------------------------------------- fields */
+
+html[data-theme="krazy-kunt"] input[type="text"],
+html[data-theme="krazy-kunt"] input[type="email"],
+html[data-theme="krazy-kunt"] input[type="search"],
+html[data-theme="krazy-kunt"] input[type="url"],
+html[data-theme="krazy-kunt"] input[type="number"],
+html[data-theme="krazy-kunt"] textarea,
+html[data-theme="krazy-kunt"] select {
+    font-family: var(--kk-type);
+    font-size: 0.95rem;
+    color: var(--kk-ink);
+    background: var(--kk-white);
+    border: 2px solid var(--kk-ink);
+    border-radius: 0;
+    box-shadow: none;
+}
+
+html[data-theme="krazy-kunt"] input::placeholder,
+html[data-theme="krazy-kunt"] textarea::placeholder { color: #6f6a5e; }
+
+html[data-theme="krazy-kunt"] input:focus,
+html[data-theme="krazy-kunt"] textarea:focus,
+html[data-theme="krazy-kunt"] select:focus {
+    outline: none;
+    border-color: var(--kk-ink);
+    box-shadow: 4px 4px 0 var(--kk-yellow);
+    background: var(--kk-white);
+}
+
+html[data-theme="krazy-kunt"] label { text-transform: uppercase; letter-spacing: 0.06em; }
+
