@@ -1,0 +1,219 @@
+/* Krazy Kunt — a xeroxed hardcore flyer, after the RISK / Death Tour cover.
+
+   Paper white, toner black and one screaming yellow, nothing else: the page is
+   a photocopy pasted up on a wall. Cropped block type (Anton) with a brush
+   scrawl dragged over it, a rifle-range target ring behind the hero, a spine of
+   vertical type down the left edge, black tape strips for labels, and every
+   panel a sheet of paper dropped onto the page with a hard toner shadow.
+
+   Palette lives in themes.json; this sheet owns the layout, the type, the
+   collage and the grime. Everything is scoped to html[data-theme="krazy-kunt"],
+   so none of it can reach another theme. The four type tokens are redefined
+   once, so every part of the site that already reads --display / --heading /
+   --body / --mono picks up the new faces without a rule per component. */
+
+@import url('https://fonts.googleapis.com/css2?family=Anton&family=Permanent+Marker&family=Special+Elite&display=swap');
+
+html[data-theme="krazy-kunt"] {
+    --kk-ink: #0b0b0b;
+    --kk-paper: #f4f2ec;
+    --kk-paper-2: #e7e3d8;
+    --kk-white: #ffffff;
+    --kk-yellow: #ffe600;
+    --kk-grey: #b8b3a6;
+
+    /* The cover's lettering: a heavy condensed grotesque, a wet brush marker
+       dragged across it, and typewriter for the small print. */
+    --kk-display: 'Anton', 'Haettenschweiler', Impact, 'Arial Narrow', sans-serif;
+    --kk-scrawl: 'Permanent Marker', 'Comic Sans MS', cursive;
+    --kk-type: 'Special Elite', 'Courier New', ui-monospace, monospace;
+    --kk-body: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+
+    --display: var(--kk-display);
+    --heading: var(--kk-display);
+    --body: var(--kk-body);
+    /* Small print — ages, credits, counters, tags — is typewritten. */
+    --mono: var(--kk-type);
+
+    --xid-bg-blur: 0px;
+}
+
+/* --------------------------------------------------------------- page field */
+
+html[data-theme="krazy-kunt"] body {
+    color: var(--text);
+    font-family: var(--kk-body);
+    font-size: 1rem;
+    line-height: 1.62;
+    letter-spacing: 0.004em;
+    background-color: var(--kk-paper);
+    background-image:
+        radial-gradient(rgba(11, 11, 11, 0.11) 0.55px, transparent 0.85px),
+        linear-gradient(96deg, rgba(11, 11, 11, 0.05), transparent 38%),
+        linear-gradient(268deg, rgba(11, 11, 11, 0.045), transparent 34%);
+    background-size: 4px 4px, 100% 100%, 100% 100%;
+    background-attachment: fixed;
+}
+
+/* A flyer is a photocopy, so the photographic backdrop, the scan drift and the
+   drifting motion layers all go; the toner speckle on the page replaces them. */
+html[data-theme="krazy-kunt"] .xid-backdrop__layer { display: none !important; }
+html[data-theme="krazy-kunt"] .scan-layer { display: none !important; }
+html[data-theme="krazy-kunt"] .xid-motion { display: none !important; }
+html[data-theme="krazy-kunt"] .noise-layer { opacity: 0.09; mix-blend-mode: multiply; }
+
+/* The spine: vertical type up the left edge, like the credits printed down the
+   side of the sleeve. Purely decorative, so it takes no pointer events. */
+html[data-theme="krazy-kunt"] body::before {
+    content: "X / i \\ D  —  AUCKLAND  —  FAKE ENTERTAINMENT  —  EST. 2021";
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 1.55rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    background: none;
+    border: 0;
+    opacity: 1;
+    color: var(--kk-ink);
+    font-family: var(--kk-display);
+    font-size: 0.6rem;
+    letter-spacing: 0.36em;
+    line-height: 1;
+    text-transform: uppercase;
+    white-space: nowrap;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 60;
+}
+
+/* The halftone screen a photocopier lays over the whole sheet: artwork, type
+   and paper alike. Multiply keeps it reading as toner. */
+html[data-theme="krazy-kunt"] body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 9990;
+    pointer-events: none;
+    opacity: 0.12;
+    mix-blend-mode: multiply;
+    background-image: radial-gradient(rgba(11, 11, 11, 0.55) 0.55px, transparent 0.9px);
+    background-size: 3px 3px;
+}
+
+html[data-theme="krazy-kunt"] ::selection {
+    background: var(--kk-yellow);
+    color: var(--kk-ink);
+}
+
+html[data-theme="krazy-kunt"] {
+    scrollbar-color: var(--kk-ink) var(--kk-paper);
+    scrollbar-width: thin;
+}
+
+html[data-theme="krazy-kunt"] ::-webkit-scrollbar { width: 12px; height: 12px; }
+html[data-theme="krazy-kunt"] ::-webkit-scrollbar-track { background: var(--kk-paper); }
+html[data-theme="krazy-kunt"] ::-webkit-scrollbar-thumb {
+    background: var(--kk-ink);
+    border: 3px solid var(--kk-paper);
+}
+
+/* Away from the left spine, so the vertical type never sits on the copy. */
+html[data-theme="krazy-kunt"] main.content-wrapper { padding-left: max(2.1rem, env(safe-area-inset-left)); }
+html[data-theme="krazy-kunt"] .site-header { padding-left: max(2.1rem, env(safe-area-inset-left)); }
+
+/* ------------------------------------------------------------------ header */
+
+html[data-theme="krazy-kunt"] .site-header {
+    /* Paper-coloured type tokens inside the masthead, so the nav icon, the
+       drawer and anything else that reads --text prints light on toner. */
+    --text: var(--kk-paper);
+    --muted: #b7b2a6;
+    --line: rgba(244, 242, 236, 0.24);
+    --blood: var(--kk-yellow);
+
+    background: var(--kk-ink);
+    border: 0;
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    position: sticky;
+    padding-top: 0.85rem;
+    padding-bottom: 0.85rem;
+}
+
+/* A strip of yellow tape holding the masthead on. */
+html[data-theme="krazy-kunt"] .site-header::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -7px;
+    height: 7px;
+    pointer-events: none;
+    background: var(--kk-yellow);
+}
+
+/* The name as the yellow block letters on the cover: black type inside a solid
+   yellow slab, knocked a degree off square. */
+html[data-theme="krazy-kunt"] .brand {
+    display: inline-block;
+    padding: 0.02rem 0.55rem 0.1rem;
+    font-family: var(--kk-display);
+    font-size: 2rem;
+    font-weight: 400;
+    line-height: 0.95;
+    letter-spacing: 0.005em;
+    text-transform: uppercase;
+    color: var(--kk-ink);
+    background: var(--kk-yellow);
+    border: 2px solid var(--kk-ink);
+    box-shadow: 4px 4px 0 var(--kk-paper);
+    text-shadow: none;
+    transform: rotate(-2deg);
+    transition: background-color 0.1s linear, color 0.1s linear, transform 0.1s linear;
+}
+
+html[data-theme="krazy-kunt"] .brand:hover {
+    color: var(--kk-paper);
+    background: var(--kk-ink);
+    border-color: var(--kk-paper);
+    box-shadow: 4px 4px 0 var(--kk-yellow);
+    transform: rotate(1.5deg);
+}
+
+html[data-theme="krazy-kunt"] .site-nav a {
+    font-family: var(--kk-display);
+    font-size: 0.94rem;
+    font-weight: 400;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--kk-paper);
+    padding: 0.18rem 0.55rem;
+    border: 0;
+    border-bottom: 3px solid transparent;
+    background: none;
+    transform: none;
+    transition: background-color 0.1s linear, color 0.1s linear, border-color 0.1s linear;
+}
+
+html[data-theme="krazy-kunt"] .site-nav a:hover,
+html[data-theme="krazy-kunt"] .site-nav a[aria-current="page"] {
+    color: var(--kk-ink);
+    background: var(--kk-yellow);
+    border-bottom-color: var(--kk-ink);
+    box-shadow: none;
+}
+
+html[data-theme="krazy-kunt"] .nav-mobile-toggle {
+    color: var(--kk-paper);
+    border: 2px solid var(--kk-paper);
+    border-radius: 0;
+    background: transparent;
+}
+
