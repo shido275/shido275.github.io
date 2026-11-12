@@ -26,6 +26,14 @@ const MUSIC_FOLDERS = [
     { label: "Compilations", path: "Music/Compilations" }
 ];
 
+/* Release delivery. release-core.js decides what a release allows and
+   download.js turns the files into one archive; both are optional so the page
+   keeps working if a script is blocked. Without them a release is treated as
+   stream only, which hands nothing over. */
+const RC = typeof ReleaseCore !== "undefined" ? ReleaseCore : null;
+const DL = typeof ReleaseDownload !== "undefined" ? ReleaseDownload : null;
+const ACCESS_PARAM = "r";
+
 // Audio State
 let allMusicTracks = [];
 let playbackQueue = [];
@@ -789,6 +797,26 @@ function escapeHtml(value) {
         .replace(/'/g, "&#39;");
 }
 
+/* info.json is the release's own file, so it is read once per folder and
+   shared: it carries the delivery mode for every track beside it. */
+const releaseInfoCache = new Map();
+
+function folderOf(path) {
+    const slash = path.lastIndexOf("/");
+    return slash === -1 ? "" : path.substring(0, slash);
+}
+
+function releaseInfoFor(file, files) {
+    const folderPath = folderOf(file.path);
+    if (releaseInfoCache.has(folderPath)) return releaseInfoCache.get(folderPath);
+    const infoFile = files.find(candidate => candidate.name.toLowerCase() === "info.json" && folderOf(candidate.path) === folderPath);
+    const request = infoFile
+        ? fetch(infoFile.download_url).then(response => (response.ok ? response.json() : {})).catch(() => ({}))
+        : Promise.resolve({});
+    releaseInfoCache.set(folderPath, request);
+    return request;
+}
+
 async function metadataFor(audioFile, files) {
     const audioBase = basename(audioFile.name).toLowerCase();
     const folderFiles = files.filter(file => file.path.substring(0, file.path.lastIndexOf("/")) === audioFile.path.substring(0, audioFile.path.lastIndexOf("/")));
@@ -810,10 +838,14 @@ async function metadataFor(audioFile, files) {
         || folderFiles.find(file => hasExtension(file, IMAGE_EXTENSIONS) && file.name.toLowerCase().includes("cover"))
         || folderFiles.find(file => hasExtension(file, IMAGE_EXTENSIONS));
 
+    /* How the release is handed out: the per-track JSON wins, info.json is the
+       fallback for releases published before the mode existed. */
+    const release = await releaseInfoFor(audioFile, files);
+
     return {
         title: metadata.title || prettyName(audioFile.name),
         artist: metadata.artist || metadata.producer || "X/i\\D",
-        album: metadata.album || "",
+        album: metadata.album || release.album || "",
         bpm: metadata.bpm || "",
         key: metadata.key || "",
         price: metadata.price || "",
@@ -823,8 +855,14 @@ async function metadataFor(audioFile, files) {
         coverUrl: coverFile ? coverFile.download_url : "",
         path: audioFile.path,
         trackNumber: metadata.trackNumber || metadata.track || 0,
-        date: metadata.date || "",
-        year: metadata.year || metadata.releaseYear || ""
+        date: metadata.date || release.releaseDate || "",
+        year: metadata.year || metadata.releaseYear || release.year || "",
+        distribution: metadata.distribution || release.distribution || "",
+        price: Number(metadata.price) || Number(release.price) || 0,
+        paymentUrl: metadata.paymentUrl || release.paymentUrl || "",
+        trackPaymentUrl: metadata.trackPaymentUrl || "",
+        access: metadata.access || release.access || "",
+        extras: Array.isArray(metadata.extras) ? metadata.extras : (Array.isArray(release.extras) ? release.extras : [])
     };
 }
 
@@ -968,6 +1006,128 @@ function filterAndRenderMusic() {
     renderTracks(visibleTracks, library);
 }
 
+/* ------------------------------------------------------- release delivery */
+
+let currentReleases = [];
+
+function releaseAccessToken() {
+    try {
+        return new URLSearchParams(window.location.search).get(ACCESS_PARAM) || "";
+    } catch {
+        return "";
+    }
+}
+
+function modeOf(item) {
+    return RC ? RC.normalizeMode(item && item.distribution) : "stream";
+}
+
+function extrasOf(item) {
+    const list = item && item.extras;
+    return Array.isArray(list) ? list.filter(entry => entry && entry.label && entry.url) : [];
+}
+
+function singleRelease(track) {
+    return {
+        title: track.album || track.title,
+        category: track.category,
+        mode: modeOf(track),
+        price: Number(track.price) || (RC ? RC.releasePrice(track.category) : 0),
+        paymentUrl: track.paymentUrl || "",
+        trackPaymentUrl: track.trackPaymentUrl || "",
+        access: track.access || "",
+        extras: extrasOf(track),
+        tracks: [track]
+    };
+}
+
+/* A folder's mode is whatever its tracks agree on; a track left on the wider
+   mode wins, so a release can never look cheaper than it is. */
+function releaseOfGroup(group) {
+    const folded = RC ? RC.foldReleases(group.tracks, { includeUnlisted: true })[0] : null;
+    const first = group.tracks[0] || {};
+    return {
+        mode: folded ? folded.distribution : modeOf(first),
+        price: (folded && folded.price) || Number(first.price) || (RC ? RC.releasePrice(group.category) : 0),
+        paymentUrl: (folded && folded.paymentUrl) || first.paymentUrl || "",
+        access: (folded && folded.access) || first.access || "",
+        extras: extrasOf(first)
+    };
+}
+
+/* Exclusive releases stay off the site until their own link is opened. */
+function canShowRelease(release, token) {
+    if (!release) return false;
+    if (!RC) return true;
+    if (!RC.isUnlisted(release.mode)) return true;
+    return RC.matchesAccess(release, token);
+}
+
+function badgeHtml(release) {
+    if (!RC) return "";
+    const badge = RC.badge(release.mode, { cents: release.price, category: release.category });
+    return `<span class="release-badge is-${badge.tone}">${escapeHtml(badge.text)}</span>`;
+}
+
+function deliveryHtml(release, index) {
+    if (!RC) return "";
+    const status = `<span class="release-status" data-status="${index}" role="status" aria-live="polite"></span>`;
+    if (release.mode === "stream") return `<span class="release-note">Listen only</span>${status}`;
+
+    if (release.mode === "paid") {
+        if (!release.paymentUrl) return `<span class="release-note">Not on sale yet</span>${status}`;
+        return `<a class="button pay" href="${escapeHtml(release.paymentUrl)}" target="_blank" rel="noopener">Buy ${escapeHtml(RC.money(release.price))}</a>${status}`;
+    }
+
+    /* Downloadable and exclusive both hand the files over; the button says
+       ZIP when that is what the visitor will get. */
+    if (!DL) return `<span class="release-note">Download unavailable</span>${status}`;
+    const zip = release.tracks.length > 1;
+    return `<button class="button download" type="button" data-release-download="${index}">${zip ? "Download ZIP" : "Download"}</button>${status}`;
+}
+
+async function startReleaseDownload(release, index, container) {
+    if (!RC || !DL || !release) return;
+    const status = container.querySelector(`[data-status="${index}"]`);
+    const plan = RC.zipPlan(release.tracks.map(track => ({
+        title: track.title,
+        trackNumber: track.trackNumber,
+        audioUrl: track.audioUrl,
+        path: track.path
+    })), release.title);
+
+    if (!plan.length) {
+        if (status) status.textContent = "No audio file to download.";
+        return;
+    }
+
+    const zip = plan.length > 1;
+    try {
+        if (status) status.textContent = zip ? "Bundling…" : "Saving…";
+        await DL.deliver(plan, RC.zipName(release.title), {
+            onProgress: (done, total, name, received, totalBytes) => {
+                if (!status) return;
+                const percent = totalBytes ? Math.round((received / totalBytes) * 100) : 0;
+                status.textContent = `${zip ? "Bundling" : "Saving"} ${done + 1}/${total} · ${percent}%`;
+            }
+        });
+        if (status) status.textContent = zip ? `Saved ${RC.zipName(release.title)}` : "Saved";
+    } catch (error) {
+        if (status) status.textContent = `Download failed: ${error.message}`;
+    }
+}
+
+function bindDelivery(container) {
+    container.querySelectorAll("[data-release-download]").forEach(button => {
+        button.addEventListener("click", event => {
+            event.preventDefault();
+            event.stopPropagation();
+            const index = Number(button.dataset.releaseDownload);
+            startReleaseDownload(currentReleases[index], index, container);
+        });
+    });
+}
+
 function renderTracks(tracks, container) {
     if (!tracks.length) {
         container.innerHTML = `<p class="muted" style="grid-column: 1 / -1; text-align: center; padding: 2.5rem; font-family: 'Share Tech Mono', monospace; letter-spacing: 0.05em; text-transform: uppercase;">No matching tracks found.</p>`;
@@ -1017,8 +1177,14 @@ function renderTracks(tracks, container) {
         return b.date.localeCompare(a.date);
     };
 
-    const sortedSingles = [...singles].sort(sortByChronology);
-    const sortedGroups = [...releaseGroups.values()];
+    const accessToken = releaseAccessToken();
+    const sortedSingles = [...singles]
+        .sort(sortByChronology)
+        .map(track => singleRelease(track))
+        .filter(release => canShowRelease(release, accessToken));
+    const sortedGroups = [...releaseGroups.values()]
+        .map(group => Object.assign(group, releaseOfGroup(group)))
+        .filter(group => canShowRelease(group, accessToken));
     
     const getGroupChronologyKey = (group) => {
         const groupDates = group.tracks.map(t => t.date).filter(Boolean);
@@ -1040,7 +1206,7 @@ function renderTracks(tracks, container) {
 
     // Formordered linear index mapping
     const orderedTracks = [];
-    sortedSingles.forEach(track => orderedTracks.push(track));
+    sortedSingles.forEach(release => release.tracks.forEach(track => orderedTracks.push(track)));
     sortedGroups.forEach(group => {
         group.tracks.forEach(track => orderedTracks.push(track));
     });
@@ -1051,9 +1217,14 @@ function renderTracks(tracks, container) {
 
     currentTracksInView = orderedTracks;
 
-    const singlesHtml = sortedSingles.map(track => renderSingleTrackCard(track)).join("");
-    const groupHtml = sortedGroups.map(group => renderReleaseFolder(group)).join("");
-    container.innerHTML = singlesHtml + groupHtml;
+    currentReleases = [...sortedSingles, ...sortedGroups];
+
+    const singlesHtml = sortedSingles.map((release, index) => renderSingleTrackCard(release, index)).join("");
+    const groupHtml = sortedGroups.map((release, index) => renderReleaseFolder(release, sortedSingles.length + index)).join("");
+    const privateBanner = accessToken && (sortedSingles.length || sortedGroups.length)
+        ? `<p class="release-note access-note">Private link · this release is unlisted</p>`
+        : "";
+    container.innerHTML = privateBanner + singlesHtml + groupHtml;
 
     // Bind event listeners on rendering
     container.querySelectorAll("[data-track-index]").forEach(button => {
@@ -1071,9 +1242,12 @@ function renderTracks(tracks, container) {
             openInfoModal(currentTracksInView[trackIndex]);
         });
     });
+
+    bindDelivery(container);
 }
 
-function renderSingleTrackCard(track) {
+function renderSingleTrackCard(release, index) {
+    const track = release.tracks[0];
     const metaParts = [track.artist, track.album, track.category ? `${track.category}${track.year ? ` (${track.year})` : ""}` : track.year].filter(Boolean);
     return `
         <article class="release-card">
@@ -1081,18 +1255,23 @@ function renderSingleTrackCard(track) {
             <div class="card-body">
                 <h3>${escapeHtml(track.title)}</h3>
                 <p class="card-meta">${escapeHtml(metaParts.join(" / "))}</p>
-                <div class="card-actions" style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                <p class="card-badges">${badgeHtml(release)}</p>
+                <div class="card-actions" style="display: flex; gap: 0.5rem; margin-top: 0.5rem; flex-wrap: wrap; align-items: center;">
                     <button class="button primary" type="button" data-track-index="${track.visualIndex}">Play</button>
                     <button class="button info-button" type="button" data-info-track="${track.visualIndex}">Info</button>
+                    ${deliveryHtml(release, index)}
                 </div>
             </div>
         </article>
     `;
 }
 
-function renderReleaseFolder(group) {
-    const groupYear = group.tracks.find(t => t.year)?.year || (group.tracks.find(t => t.date && /\b\d{4}\b/.test(t.date))?.date.match(/\b\d{4}\b/)?.[0] || "");
-    const metaParts = [group.category ? `${group.category}${groupYear ? ` (${groupYear})` : ""}` : groupYear, `${group.tracks.length} song${group.tracks.length === 1 ? "" : "s"}`].filter(Boolean);
+function renderReleaseFolder(group, index) {
+    const tracks = group.tracks;
+    const groupYear = tracks.find(t => t.year)?.year || (tracks.find(t => t.date && /\b\d{4}\b/.test(t.date))?.date.match(/\b\d{4}\b/)?.[0] || "");
+    const metaParts = [group.category ? `${group.category}${groupYear ? ` (${groupYear})` : ""}` : groupYear, `${tracks.length} song${tracks.length === 1 ? "" : "s"}`].filter(Boolean);
+    const perSongPrice = RC ? RC.money(RC.trackPrice()) : "$2.99";
+    const extras = Array.isArray(group.extras) ? group.extras : [];
     return `
         <details class="music-folder">
             <summary>
@@ -1100,23 +1279,34 @@ function renderReleaseFolder(group) {
                 <span class="folder-copy">
                     <strong>${escapeHtml(group.title)}</strong>
                     <small>${escapeHtml(metaParts.join(" / "))}</small>
+                    <span class="folder-badges">${badgeHtml(group)}</span>
                 </span>
                 <span class="folder-actions" style="display: flex; align-items: center; gap: 0.5rem; z-index: 2;">
-                    <button class="button info-button" type="button" data-info-track="${group.tracks[0].visualIndex}" style="min-height: 2.2rem; padding: 0.2rem 0.6rem; font-size: 0.8rem;">Info</button>
+                    <button class="button info-button" type="button" data-info-track="${tracks[0].visualIndex}" style="min-height: 2.2rem; padding: 0.2rem 0.6rem; font-size: 0.8rem;">Info</button>
+                    ${deliveryHtml(group, index)}
                     <span class="folder-toggle">Open</span>
                 </span>
             </summary>
             <div class="folder-tracks">
-                ${group.tracks.map(track => `
+                ${tracks.map(track => `
                     <div class="folder-track-row">
                         <span>
                             <strong>${escapeHtml(track.title)}</strong>
                             <small>${escapeHtml(track.artist || "X/i\\D")}</small>
                         </span>
-                        <button class="button primary" type="button" data-track-index="${track.visualIndex}">Play</button>
+                        <span class="folder-track-actions">
+                            ${group.mode === "paid" && track.trackPaymentUrl ? `<a class="button pay" href="${escapeHtml(track.trackPaymentUrl)}" target="_blank" rel="noopener">Buy ${escapeHtml(perSongPrice)}</a>` : ""}
+                            <button class="button primary" type="button" data-track-index="${track.visualIndex}">Play</button>
+                        </span>
                     </div>
                 `).join("")}
             </div>
+            ${extras.length ? `
+                <div class="folder-extras">
+                    <span class="folder-extras-label">Extras</span>
+                    ${extras.map(extra => `<a href="${escapeHtml(extra.url)}" target="_blank" rel="noopener">${escapeHtml(extra.label)}</a>`).join("")}
+                </div>
+            ` : ""}
         </details>
     `;
 }
