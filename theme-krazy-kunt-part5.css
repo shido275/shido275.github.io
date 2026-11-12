@@ -41,7 +41,7 @@ html[data-theme="krazy-kunt"] .info-modal-close {
 }
 
 html[data-theme="krazy-kunt"] .info-modal-close:hover {
-    background: var(--kk-ink);
+    background: var(--kik-ink);
     color: var(--kk-paper);
 }
 
@@ -186,4 +186,3 @@ html[data-theme="krazy-kunt"] .tier-flag {
     html[data-theme="krazy-kunt"] body::after { opacity: 0.08; }
     html[data-theme="krazy-kunt"] .hero:not(.compact) h1::before { letter-spacing: 0; }
 }
-
