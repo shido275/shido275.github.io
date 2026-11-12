@@ -1,1 +1,18 @@
-<°s‹D
+/* Krazy Kunt â€” a xeroxed hardcore flyer, after the RISK / Death Tour cover.
+
+   Paper white, toner black and one screaming yellow, nothing else: the page is
+   a photocopy pasted up on a wall. Cropped block type (Anton) with a brush
+   scrawl dragged over it, a rifle-range target ring behind the hero, a spine of
+   vertical type down the left edge, black tape strips for labels, and every
+   panel a sheet of paper dropped onto the page with a hard toner shadow.
+
+   Palette lives in themes.json. The sheet itself is kept in six parts, the way
+   style.css is, and imported in order below, so the cascade runs top to bottom
+   exactly as one file would. Everything is scoped to html[data-theme="krazy-kunt"]. */
+
+@import url('theme-krazy-kunt-part1.css');
+@import url('theme-krazy-kunt-part2.css');
+@import url('theme-krazy-kunt-part3.css');
+@import url('theme-krazy-kunt-part4.css');
+@import url('theme-krazy-kunt-part5.css');
+@import url('theme-krazy-kunt-part6.css');

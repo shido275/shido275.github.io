@@ -41,7 +41,7 @@ html[data-theme="krazy-kunt"] .info-modal-close {
 }
 
 html[data-theme="krazy-kunt"] .info-modal-close:hover {
-    background: var(--kik-ink);
+    background: var(--kk-ink);
     color: var(--kk-paper);
 }
 
@@ -70,4 +70,3 @@ html[data-theme="krazy-kunt"] footer::before {
     height: 6px;
     background: var(--kk-yellow);
 }
-
