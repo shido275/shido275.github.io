@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex">
+    <title>Your purchase / X/i\D</title>
+    <style>
+        :root {
+            --bg: #050505;
+            --panel: #0d0d0d;
+            --text: #edebe6;
+            --muted: #7a766f;
+            --line: rgba(237, 235, 230, 0.16);
+            --gold: #ffe600;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem 1.25rem;
+            background: var(--bg);
+            color: var(--text);
+            font-family: Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+        }
+
+        main {
+            width: min(640px, 100%);
+            border: 1px solid var(--line);
+            background: var(--panel);
+            padding: clamp(1.4rem, 4vw, 2.6rem);
+        }
+
+        .brand {
+            font-size: 1rem;
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin: 0 0 1.4rem;
+        }
+
+        .brand a { color: inherit; text-decoration: none; }
+        .brand a:hover { color: var(--text); }
+
+        h1 {
+            margin: 0 0 0.5rem;
+            font-size: clamp(1.6rem, 5vw, 2.3rem);
+            line-height: 1.1;
+            letter-spacing: -0.01em;
+        }
+
+        p { margin: 0 0 1rem; }
+
+        .status {
+            font-size: 0.82rem;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--muted);
+            min-height: 1.2em;
+        }
+
+        .status.is-error { color: #ff5a5a; }
+        .status.is-ok { color: var(--gold); }
+
+        .downloads { display: grid; gap: 0.6rem; margin-top: 1.4rem; }
+
+        .download {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            padding: 0.8rem 1rem;
+            border: 1px solid var(--line);
+            background: transparent;
+            color: var(--text);
+            font: inherit;
+            text-align: left;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        .download:hover,
+        .download:focus-visible {
+            border-color: var(--gold);
+            outline: none;
+        }
+
+        .download small { color: var(--muted); }
+
+        .download.is-primary { border-color: var(--gold); color: var(--gold); }
+
+        .note {
+            margin-top: 1.6rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--line);
+            font-size: 0.8rem;
+            color: var(--muted);
+        }
+
+        .note a { color: var(--text); }
+    </style>
+</head>
+<body>
+    <main>
+        <p class="brand"><a href="./">X/i\D</a></p>
+        <h1 id="heading">Your purchase</h1>
+        <p class="status" id="status" role="status" aria-live="polite">Checking your payment…</p>
+        <div class="downloads" id="downloads"></div>
+        <p class="note" id="note">
+            Keep this page or the email Stripe sent you: the link works again while the order stays in Stripe.
+            Trouble? <a href="mailto:shidomusic275@gmail.com">shidomusic275@gmail.com</a>
+        </p>
+    </main>
+
+    <script src="release-core.js"></script>
+    <script src="download.js"></script>
+    <script>
+        /* The verifier. Its only job is to confirm with Stripe that this
+           checkout session was paid before any file is shown. Until it is
+           deployed and given a Stripe key it answers 503 and this page says so
+           plainly rather than handing anything over. */
+        const PURCHASE_ENDPOINT = "";
+
+        const params = new URLSearchParams(window.location.search);
+        const sessionId = (params.get("s") || params.get("session_id") || "").trim();
+        const releaseHint = (params.get("release") || "").trim();
+        const statusEl = document.getElementById("status");
+        const downloadsEl = document.getElementById("downloads");
+        const headingEl = document.getElementById("heading");
+
+        function setStatus(message, tone) {
+            statusEl.textContent = message;
+            statusEl.className = `status${tone ? ` is-${tone}` : ""}`;
+        }
+
+        function stop(message) {
+            setStatus(message, "error");
+            document.getElementById("note").hidden = true;
+        }
+
+        async function claim() {
+            if (!PURCHASE_ENDPOINT) {
+                stop("The store is still being set up, so this order cannot be confirmed here yet. Everything you paid for is safe - email shidomusic275@gmail.com with your Stripe receipt and it will be sent to you.");
+                return null;
+            }
+            const url = `${PURCHASE_ENDPOINT.replace(/\/+$/, "")}/claim?session=${encodeURIComponent(sessionId)}`;
+            try {
+                const response = await fetch(url, { cache: "no-store" });
+                const body = await response.json().catch(() => ({}));
+                if (response.status === 503 || body.configured === false) {
+                    stop("Payments are switched on, but the store has not been given its Stripe key yet. Email shidomusic275@gmail.com with your receipt and the files will be sent to you.");
+                    return null;
+                }
+                if (response.status === 402 || body.reason === "unpaid") {
+                    stop("Stripe has not marked this payment as complete yet. If you have just paid, wait a minute and reload.");
+                    return null;
+                }
+                if (!response.ok || !body.ok) {
+                    stop("That order could not be confirmed. Email shidomusic275@gmail.com with your Stripe receipt.");
+                    return null;
+                }
+                return body;
+            } catch (error) {
+                stop("Could not reach the store to confirm the order. Check your connection and reload.");
+                return null;
+            }
+        }
+
+        async function loadTracks(order) {
+            const response = await fetch(`music-manifest.json?v=${Date.now()}`);
+            if (!response.ok) throw new Error("catalogue unavailable");
+            const all = await response.json();
+            const wanted = String(order.release || releaseHint || "").trim().toLowerCase();
+            let rows = all.filter(track => String(track.album || "").trim().toLowerCase() === wanted);
+            if (!rows.length) rows = all.filter(track => String(track.title || "").trim().toLowerCase() === wanted);
+            if (!rows.length) rows = all.filter(track => String(track.album || "").toLowerCase().includes(wanted));
+            const single = /^track-(\d+)$/.exec(String(order.product || ""));
+            if (single) rows = rows.filter(track => Number(track.trackNumber) === Number(single[1]));
+            return rows.sort((a, b) => Number(a.trackNumber || 0) - Number(b.trackNumber || 0));
+        }
+
+        function downloadButton(label, hint, onClick, primary) {
+            const button = document.createElement("button");
+            button.type = "button";
+            button.className = `download${primary ? " is-primary" : ""}`;
+            const left = document.createElement("span");
+            left.textContent = label;
+            const right = document.createElement("small");
+            right.textContent = hint;
+            button.append(left, right);
+            button.addEventListener("click", async () => {
+                button.disabled = true;
+                right.textContent = "Preparing…";
+                try {
+                    const result = await onClick((done, total, percent) => {
+                        right.textContent = `${percent}%`;
+                    });
+                    right.textContent = result && result.files > 1 ? "Saved ZIP" : "Saved";
+                } catch (error) {
+                    right.textContent = "Failed";
+                    setStatus(`Download failed: ${error.message}`, "error");
+                } finally {
+                    button.disabled = false;
+                }
+            });
+            downloadsEl.append(button);
+            return button;
+        }
+
+        async function main() {
+            if (!sessionId) {
+                stop("This page opens after a purchase. Nothing to confirm here.");
+                return;
+            }
+
+            const order = await claim();
+            if (!order) return;
+
+            let tracks = [];
+            try {
+                tracks = await loadTracks(order);
+            } catch {
+                stop("Paid, but the catalogue could not be read. Email shidomusic275@gmail.com with your receipt.");
+                return;
+            }
+
+            if (!tracks.length) {
+                stop("Paid, but that release is not on the site any more. Email shidomusic275@gmail.com with your receipt.");
+                return;
+            }
+
+            headingEl.textContent = tracks[0].album || tracks[0].title || "Your purchase";
+            setStatus(order.product === "release" ? "Paid - here are your files." : "Paid - here is your song.", "ok");
+
+            const plan = ReleaseCore.zipPlan(tracks, tracks[0].album || tracks[0].title);
+            const zipName = ReleaseCore.zipName(tracks[0].album || tracks[0].title);
+
+            if (plan.length > 1) {
+                downloadButton(zipName, "ZIP", async (progress) => {
+                    return ReleaseDownload.deliver(plan, zipName, {
+                        onProgress: (done, total, name, received, bytes) => {
+                            progress(done, total, bytes ? Math.round((received / bytes) * 100) : 0);
+                        }
+                    });
+                }, true);
+            }
+
+            plan.forEach(item => {
+                downloadButton(item.name.split("/").pop(), "File", async (progress) => {
+                    return ReleaseDownload.deliver([item], zipName, {
+                        onProgress: (done, total, name, received, bytes) => {
+                            progress(done, total, bytes ? Math.round((received / bytes) * 100) : 0);
+                        }
+                    });
+                }, plan.length === 1);
+            });
+        }
+
+        main();
+    </script>
+</body>
+</html>
