@@ -1,2 +1,0 @@
-const a = "ST\u00dc\u00d1T\u012aN";
-console.log(a);
