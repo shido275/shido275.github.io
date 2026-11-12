@@ -123,9 +123,9 @@
     <script>
         /* The verifier. Its only job is to confirm with Stripe that this
            checkout session was paid before any file is shown. Until it is
-           deployed and given a Stripe key it answers 503 and this page says so
-           plainly rather than handing anything over. */
-        const PURCHASE_ENDPOINT = "";
+           given a Stripe key it answers 503 and this page says so plainly
+           rather than handing anything over. */
+        const PURCHASE_ENDPOINT = "https://site-44ffe76505b74120ae4b7336da563f84.freebuff.page";
 
         const params = new URLSearchParams(window.location.search);
         const sessionId = (params.get("s") || params.get("session_id") || "").trim();
