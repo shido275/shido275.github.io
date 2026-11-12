@@ -214,3 +214,142 @@ html[data-background="on"] body::before {
         transition: none;
     }
 }
+
+/* ==========================================================================
+   RELEASE DELIVERY — how a release is handed out
+   Badges sit beside the release, the action sits with Play, and the status line
+   reports a ZIP while it builds.
+   ========================================================================== */
+
+.card-badges,
+.folder-badges {
+    display: block;
+    margin: 0.35rem 0 0;
+}
+
+.folder-badges {
+    display: inline-block;
+    margin: 0.3rem 0 0;
+}
+
+.release-badge {
+    display: inline-block;
+    padding: 0.08rem 0.42rem;
+    font-family: var(--mono, monospace);
+    font-size: 0.62rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    border: 1px solid var(--line, rgba(255, 255, 255, 0.2));
+    border-radius: 2px;
+    color: var(--muted);
+    white-space: nowrap;
+}
+
+.release-badge.is-free {
+    color: var(--green, #39ff14);
+    border-color: currentColor;
+}
+
+.release-badge.is-paid {
+    color: var(--gold, #ffe600);
+    border-color: currentColor;
+}
+
+.release-badge.is-exclusive {
+    color: var(--rose, #ff0055);
+    border-color: currentColor;
+}
+
+.release-badge.is-stream {
+    color: var(--muted);
+}
+
+.release-note {
+    font-family: var(--mono, monospace);
+    font-size: 0.66rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    white-space: nowrap;
+}
+
+.release-status {
+    font-family: var(--mono, monospace);
+    font-size: 0.66rem;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+    min-width: 0;
+}
+
+.release-status:empty {
+    display: none;
+}
+
+.access-note {
+    grid-column: 1 / -1;
+    padding: 0.4rem 0.7rem;
+    border: 1px dashed var(--line, rgba(255, 255, 255, 0.25));
+    color: var(--text);
+}
+
+.button.pay {
+    border-color: var(--gold, #ffe600);
+    color: var(--gold, #ffe600);
+}
+
+.button.download {
+    border-color: var(--green, #39ff14);
+    color: var(--green, #39ff14);
+}
+
+.folder-track-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.folder-track-actions .button {
+    min-height: 2rem;
+    padding: 0.15rem 0.55rem;
+    font-size: 0.78rem;
+}
+
+.folder-extras {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.7rem 0 0.2rem;
+    border-top: 1px dashed var(--line, rgba(255, 255, 255, 0.18));
+    margin-top: 0.6rem;
+}
+
+.folder-extras-label {
+    font-family: var(--mono, monospace);
+    font-size: 0.62rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+
+.folder-extras a {
+    font-family: var(--mono, monospace);
+    font-size: 0.72rem;
+    color: var(--text);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+@media (max-width: 720px) {
+    .folder-actions {
+        flex-wrap: wrap;
+        justify-content: flex-end;
+    }
+
+    .release-status {
+        flex-basis: 100%;
+        text-align: right;
+    }
+}
