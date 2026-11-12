@@ -151,7 +151,35 @@
 
     /* Album-level credits. The site's release modal reads exactly these keys
        from <release>/info.json, so the importer now writes that file too. */
-    function buildReleaseInfo(form, coverName) {
+    /* The release metadata the catalogue and the site both carry: how the
+       release is handed out, and what that mode needs (a price and a Stripe
+       link, or an access token for an unlisted release). Built by release-core
+       and passed in, so this file stays free of pricing rules. */
+    function releaseMetaFields(meta) {
+        const source = meta || {};
+        const out = {};
+        if (source.distribution) out.distribution = source.distribution;
+        if (Number(source.price) > 0) out.price = Number(source.price);
+        if (Number(source.trackPrice) > 0) out.trackPrice = Number(source.trackPrice);
+        if (clean(source.paymentUrl)) out.paymentUrl = clean(source.paymentUrl);
+        if (source.trackPaymentUrls && typeof source.trackPaymentUrls === "object") {
+            const links = {};
+            Object.keys(source.trackPaymentUrls).forEach(key => {
+                if (clean(source.trackPaymentUrls[key])) links[key] = clean(source.trackPaymentUrls[key]);
+            });
+            if (Object.keys(links).length) out.trackPaymentUrls = links;
+        }
+        if (clean(source.access)) out.access = clean(source.access);
+        if (Array.isArray(source.extras) && source.extras.length) {
+            out.extras = source.extras
+                .map(item => ({ label: clean(item && item.label), url: clean(item && item.url), kind: clean(item && item.kind) || "link" }))
+                .filter(item => item.label && item.url);
+            if (!out.extras.length) delete out.extras;
+        }
+        return out;
+    }
+
+    function buildReleaseInfo(form, coverName, meta) {
         const releaseDate = form.date || new Date().toISOString().slice(0, 10);
         const info = {
             title: albumLabel(form.category, form.release, form.album),
@@ -169,6 +197,7 @@
         };
         if (form.explicit) info.explicit = true;
         if (coverName) info.cover = coverName;
+        Object.assign(info, releaseMetaFields(meta));
         return info;
     }
 
@@ -181,6 +210,8 @@
         const albumName = albumLabel(category, release, album);
         const year = yearOf(releaseDate);
         const coverUrl = coverName ? `${folder}/${safeSegment(coverName)}` : "";
+        const meta = options.meta || {};
+        const mode = clean(meta.distribution);
 
         return tracks.map((track, index) => {
             const fileName = safeSegment(track.fileName);
@@ -198,6 +229,19 @@
             };
             if (category !== "Singles") {
                 entry.trackNumber = Number(track.trackNumber) || index + 1;
+            }
+            /* The site draws the buttons from these, so every track of a release
+               carries the same answer. */
+            if (mode) {
+                entry.distribution = mode;
+                if (mode === "paid") {
+                    entry.price = Number(meta.price) || 0;
+                    if (clean(meta.trackPrice)) entry.trackPrice = Number(meta.trackPrice);
+                    if (clean(meta.paymentUrl)) entry.paymentUrl = clean(meta.paymentUrl);
+                    const perSong = meta.trackPaymentUrls && meta.trackPaymentUrls[`track-${entry.trackNumber}`];
+                    if (clean(perSong)) entry.trackPaymentUrl = clean(perSong);
+                }
+                if (mode === "exclusive" && clean(meta.access)) entry.access = clean(meta.access);
             }
             return entry;
         });
@@ -264,6 +308,7 @@
         if (!form || !form.release) throw new Error("Release name is required.");
 
         const warnings = [];
+        const meta = options.meta || {};
         const tracks = audioFiles.map((file, index) => ({
             fileName: file.name,
             title: (form.titles && form.titles[file.name]) || prettyName(file.name),
@@ -280,14 +325,21 @@
             artist: form.artist,
             date: form.date,
             tracks,
-            coverName
+            coverName,
+            meta
         });
         const folder = releaseFolder(form.category, form.release);
-        const info = buildReleaseInfo(form, coverName);
+        const info = buildReleaseInfo(form, coverName, meta);
 
         if (!info.description) warnings.push("No release description - the site's Credits panel will read as empty.");
         if (!info.performers.length && !info.producers.length && !info.writers.length) {
             warnings.push("No credits filled in - the site will show N/A for performers, producers and writers.");
+        }
+        if (meta.distribution === "paid" && !info.paymentUrl) {
+            warnings.push("Paid release without a Stripe payment link - the Buy button stays hidden until a link is made in Release sales.");
+        }
+        if (meta.distribution === "exclusive" && !info.access) {
+            warnings.push("Exclusive release without an access token - the shareable link cannot be made.");
         }
 
         const writes = [];
@@ -305,7 +357,14 @@
                     trackNumber: entries[index].trackNumber,
                     date: entries[index].date,
                     year: entries[index].year,
-                    cover: coverName || undefined
+                    cover: coverName || undefined,
+                    /* The site reads a folder by walking it, so the delivery
+                       mode has to live beside each track as well as in
+                       info.json and the catalogue. */
+                    distribution: entries[index].distribution,
+                    price: entries[index].price,
+                    trackPaymentUrl: entries[index].trackPaymentUrl,
+                    access: entries[index].access
                 }, null, 2)}\n`
             });
         });
@@ -352,7 +411,8 @@
             warnings,
             totalBytes,
             trackCount: entries.length,
-            coverName
+            coverName,
+            distribution: meta.distribution || ""
         };
     }
 
