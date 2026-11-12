@@ -1,0 +1,196 @@
+/* Krazy Kunt, part 2 of 5: the type. Imported in order from
+   theme-krazy-kunt.css, which is the file themes.json points at. */
+
+/* -------------------------------------------------------------------- type */
+
+html[data-theme="krazy-kunt"] h1,
+html[data-theme="krazy-kunt"] h2,
+html[data-theme="krazy-kunt"] h3,
+html[data-theme="krazy-kunt"] h4,
+html[data-theme="krazy-kunt"] .subsection-title,
+html[data-theme="krazy-kunt"] .panel-label,
+html[data-theme="krazy-kunt"] .queue-header h4 {
+    font-family: var(--kk-display);
+    font-weight: 400;
+    text-transform: uppercase;
+    letter-spacing: 0.005em;
+    line-height: 0.96;
+    color: var(--kk-ink);
+    text-shadow: none;
+}
+
+/* The cover headline: the name blown up past the margins, a yellow slab behind
+   the lower half of it, and a brush scrawl dragged across the top. */
+html[data-theme="krazy-kunt"] .hero:not(.compact) h1,
+html[data-theme="krazy-kunt"] .all-links-hero h1,
+html[data-theme="krazy-kunt"] .init-card h2 {
+    position: relative;
+    isolation: isolate;
+    display: block;
+    width: fit-content;
+    font-family: var(--kk-display);
+    font-size: clamp(4.4rem, 15vw, 12rem);
+    line-height: 0.8;
+    letter-spacing: -0.02em;
+    color: var(--kk-ink);
+    text-shadow: none;
+    transform: rotate(-1.5deg);
+    transform-origin: left center;
+}
+
+/* The slab hugs the word and bleeds a little past it at both ends, the way the
+   yellow block sits under the lettering on the cover. */
+html[data-theme="krazy-kunt"] .hero:not(.compact) h1::after,
+html[data-theme="krazy-kunt"] .all-links-hero h1::after,
+html[data-theme="krazy-kunt"] .init-card h2::after {
+    content: "";
+    position: absolute;
+    left: -0.05em;
+    bottom: 0.04em;
+    width: 103%;
+    height: 0.56em;
+    background: var(--kk-yellow);
+    z-index: -1;
+    transform: rotate(-1deg);
+}
+
+/* The stock stylesheets draw a 1px rule under a hero title and a hairline dash
+   before every eyebrow; a paste-up has neither. */
+html[data-theme="krazy-kunt"] .hero.compact h1::after { content: none; display: none; }
+html[data-theme="krazy-kunt"] .eyebrow::before { content: none; display: none; }
+
+/* Room above the headline for the scrawl, so it lands on the type and not on
+   the label taped above it. */
+html[data-theme="krazy-kunt"] .hero:not(.compact) .eyebrow,
+html[data-theme="krazy-kunt"] .all-links-hero .eyebrow {
+    margin-bottom: 2.4rem;
+}
+
+html[data-theme="krazy-kunt"] .hero:not(.compact) h1::before,
+html[data-theme="krazy-kunt"] .all-links-hero h1::before {
+    content: "KRAZY KUNT";
+    position: absolute;
+    left: 0.04em;
+    top: -0.02em;
+    margin: 0;
+    padding: 0;
+    font-family: var(--kk-scrawl);
+    font-size: 0.32em;
+    font-weight: 400;
+    line-height: 1;
+    letter-spacing: 0.01em;
+    color: var(--kk-ink);
+    /* Knocked out of the block letters with a paper outline: on the cover the
+       brush scrawl sits on top of the printed type, it does not merge into it. */
+    -webkit-text-stroke: 0.045em var(--kk-paper);
+    paint-order: stroke fill;
+    background: none;
+    border: 0;
+    box-shadow: none;
+    text-shadow: none;
+    transform: rotate(-7deg);
+    transform-origin: left top;
+    opacity: 0.96;
+    pointer-events: none;
+    z-index: 3;
+}
+
+/* Compact heroes — EPK, beat store, portfolio — keep the same face, a size
+   down and underlined with a swipe of yellow instead of a slab. */
+html[data-theme="krazy-kunt"] .hero.compact h1,
+html[data-theme="krazy-kunt"] .hero.compact h2 {
+    font-size: clamp(2.8rem, 8vw, 5.6rem);
+    line-height: 0.86;
+    letter-spacing: -0.01em;
+    transform: none;
+}
+
+/* Headings get a highlighter swipe across the bottom third, the way a marker
+   goes over type on a paste-up. */
+html[data-theme="krazy-kunt"] .section-heading h2,
+html[data-theme="krazy-kunt"] .portfolio-head h2,
+html[data-theme="krazy-kunt"] .hero-panel h2 {
+    display: inline;
+    padding: 0 0.05em;
+    font-family: var(--kk-display);
+    line-height: 1.02;
+    color: var(--kk-ink);
+    text-shadow: none;
+    background: linear-gradient(180deg,
+            transparent 60%,
+            var(--kk-yellow) 60%,
+            var(--kk-yellow) 94%,
+            transparent 94%);
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+}
+
+html[data-theme="krazy-kunt"] .section-heading {
+    max-width: 72ch;
+    padding-bottom: 0.7rem;
+    border-bottom: 3px solid var(--kk-ink);
+}
+
+html[data-theme="krazy-kunt"] .lead,
+html[data-theme="krazy-kunt"] .info-modal p,
+html[data-theme="krazy-kunt"] .modal-description {
+    color: var(--text);
+    opacity: 1;
+    font-size: 1.02rem;
+    line-height: 1.68;
+}
+
+html[data-theme="krazy-kunt"] .muted,
+html[data-theme="krazy-kunt"] small { color: var(--muted); }
+
+/* The labels are strips of black tape with the type knocked out of them. */
+html[data-theme="krazy-kunt"] .eyebrow {
+    display: inline-block;
+    padding: 0.24rem 0.62rem;
+    font-family: var(--kk-type);
+    font-size: 0.64rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--kk-paper);
+    background: var(--kk-ink);
+    border: 0;
+    box-shadow: 4px 4px 0 var(--kk-yellow);
+    transform: rotate(-1.3deg);
+}
+
+html[data-theme="krazy-kunt"] .panel-label {
+    font-family: var(--kk-scrawl);
+    font-size: 1rem;
+    letter-spacing: 0.01em;
+    color: var(--kk-ink);
+    text-shadow: none;
+    transform: none;
+}
+
+html[data-theme="krazy-kunt"] .time-label,
+html[data-theme="krazy-kunt"] .stat-grid div strong,
+html[data-theme="krazy-kunt"] footer,
+html[data-theme="krazy-kunt"] .card-meta,
+html[data-theme="krazy-kunt"] .folder-copy small,
+html[data-theme="krazy-kunt"] .folder-track-row small {
+    font-family: var(--kk-type);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+/* Links in running copy are marked with a yellow swipe, not a faint rule. */
+html[data-theme="krazy-kunt"] .section-band p > a,
+html[data-theme="krazy-kunt"] .lead a,
+html[data-theme="krazy-kunt"] .tier-notes a {
+    color: var(--kk-ink);
+    text-decoration: none;
+    background: linear-gradient(180deg, transparent 55%, var(--kk-yellow) 55%, var(--kk-yellow) 92%, transparent 92%);
+}
+
+html[data-theme="krazy-kunt"] .section-band p > a:hover,
+html[data-theme="krazy-kunt"] .lead a:hover,
+html[data-theme="krazy-kunt"] .tier-notes a:hover {
+    background: var(--kk-ink);
+    color: var(--kk-paper);
+}
+
