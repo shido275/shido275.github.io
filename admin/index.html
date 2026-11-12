@@ -148,6 +148,55 @@
                         </label>
                     </div>
 
+                    <h3 class="subsection-title">Sales and access</h3>
+                    <p class="hint">How this release is handed out. The site draws its badge and its buttons from
+                        this, and it is written to <code>info.json</code> and to every catalogue entry.</p>
+                    <div class="field-grid">
+                        <label>Distribution
+                            <select id="form-distribution"></select>
+                        </label>
+                        <label>Release price (USD)
+                            <input id="form-price" type="number" min="0" step="0.01" inputmode="decimal"
+                                placeholder="Filled from the category">
+                        </label>
+                        <label class="wide">Stripe payment link for the whole release
+                            <input id="form-payment-url" autocomplete="off" spellcheck="false"
+                                placeholder="https://buy.stripe.com/...">
+                        </label>
+                        <label class="wide">Exclusive access token
+                            <input id="form-access" autocomplete="off" spellcheck="false"
+                                placeholder="Made automatically when you pick Exclusive">
+                        </label>
+                    </div>
+                    <p class="hint" id="distribution-note"></p>
+                    <div class="row" id="access-row" hidden>
+                        <button class="button" type="button" id="btn-access-token">New token</button>
+                        <input id="access-link" readonly aria-label="Shareable link">
+                    </div>
+                    <label class="wide" id="extras-block" hidden>Extra content for the exclusive link (one per line:
+                        Label | https://link)
+                        <textarea id="form-extras" rows="3"
+                            placeholder="Deconstructed - Track 1 | https://example.com/video"></textarea>
+                    </label>
+
+                    <h3 class="subsection-title">Stripe links (paid releases)</h3>
+                    <p class="hint">One link for the whole release at its typed price, and one per song at $2.99, so a
+                        buyer can take a single track out of an album. The key stays in this browser and is sent only to
+                        <code>api.stripe.com</code>.</p>
+                    <div class="field-grid">
+                        <label class="wide">Restricted Stripe key
+                            <input id="form-stripe-key" type="password" autocomplete="off" spellcheck="false"
+                                placeholder="rk_live_... or rk_test_...">
+                        </label>
+                    </div>
+                    <div class="row">
+                        <button class="button" type="button" id="row-stripe-save">Save key</button>
+                        <button class="button ghost" type="button" id="row-stripe-forget">Forget key</button>
+                        <button class="button primary" type="button" id="row-stripe-links">Create payment links</button>
+                        <span class="status" id="row-stripe-status"></span>
+                    </div>
+                    <div id="row-links-output"></div>
+
                     <div class="dropzone" id="dropzone">
                         <strong>Drop audio files</strong>
                         <span>.mp3 - .wav - .m4a - .flac, or
@@ -535,6 +584,7 @@
     </div>
 
     <script src="lock.js"></script>
+    <script src="../release-core.js"></script>
     <script src="import-core.js"></script>
     <script src="app.js"></script>
     <script src="media.js"></script>
